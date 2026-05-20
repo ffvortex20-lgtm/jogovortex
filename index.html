@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vortex Strike - Premium Edition</title>
+    <title>Vortex Galaxy Strike - Premium Physics</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,653 +11,517 @@
             -webkit-user-select: none;
             margin: 0;
             padding: 0;
+            touch-action: none; /* Bloqueia zoom e rolagem nativa do Android/WebView */
         }
         body, html {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #0a0a0c;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #020205;
+            font-family: 'Segoe UI', Roboto, sans-serif;
         }
-        #gameCanvas {
+        canvas {
             display: block;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, #15151e 0%, #07070a 100%);
         }
-        /* UI Superior - Status */
-        #ui-container {
+        /* HUD Superior */
+        #hud {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
+            top: 15px;
+            left: 0;
+            width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             pointer-events: none;
+            font-family: monospace;
         }
-        .ui-box {
-            background: rgba(15, 15, 25, 0.75);
-            border: 1px solid #ff0055;
-            box-shadow: 0 0 10px rgba(25, 0, 85, 0.5);
+        .hud-item {
+            background: rgba(5, 5, 15, 0.85);
+            border: 1px solid #00ffcc;
+            box-shadow: 0 0 12px rgba(0, 255, 204, 0.3);
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 4px;
             color: #fff;
-            font-weight: bold;
             font-size: 14px;
-            letter-spacing: 1px;
+            font-weight: bold;
         }
-        .ui-box span {
-            color: #00ffcc;
-        }
-        /* Controles Virtuais Touch */
-        .joystick-container {
-            position: absolute;
-            bottom: 30px;
-            width: 110px;
-            height: 110px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: none;
-        }
-        #move-joystick-container { left: 30px; }
-        #aim-joystick-container { right: 30px; border-color: rgba(255, 0, 85, 0.3); }
-        
-        .joystick-stick {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #2b2b36, #1c1c24);
-            border: 2px solid #00ffcc;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
-            transition: background 0.2s;
-        }
-        #aim-joystick-container .joystick-stick {
-            border-color: #ff0055;
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
-        }
-        /* Tela de Game Over e Loja */
+        .hud-item span { color: #ff0055; }
+
+        /* Modais */
         .modal {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(7, 7, 10, 0.9);
+            background: rgba(2, 2, 5, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
             z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            display: none;
         }
-        .modal.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal.active { display: flex; }
         .modal h1 {
-            font-size: 36px;
-            color: #ff0055;
-            text-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
+            font-size: 32px;
+            color: #00ffcc;
+            text-shadow: 0 0 15px rgba(0, 255, 204, 0.6);
             margin-bottom: 20px;
+            letter-spacing: 2px;
         }
         .btn {
-            background: linear-gradient(90deg, #ff0055, #7a00ff);
+            background: linear-gradient(90deg, #00ffcc, #7a00ff);
             border: none;
-            padding: 12px 30px;
-            color: white;
+            padding: 14px 35px;
+            color: black;
             font-weight: bold;
             border-radius: 4px;
             font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
         }
-        /* Botão Loja */
-        #shop-trigger {
-            position: absolute;
-            top: 70px;
-            right: 12px;
-            background: rgba(15, 15, 25, 0.8);
-            border: 1px solid #00ffcc;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-            width: 90%;
-            max-width: 400px;
-        }
-        .shop-item {
-            background: #151522;
-            border: 1px solid #333;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .shop-item.owned { border-color: #00ffcc; }
-        .shop-item p { font-size: 12px; margin: 4px 0 8px; color: #aaa; }
-        .shop-item button {
-            background: #222; border: 1px solid #55; color: white;
-            padding: 4px 10px; border-radius: 4px; font-size: 12px; width: 100%;
-        }
-        .shop-item button.buyable { background: #00ffcc; color: black; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="ui-container">
-        <div class="ui-box">HP: <span id="hp-display">100</span></div>
-        <div class="ui-box">PONTOS: <span id="score-display">0</span></div>
-        <div class="ui-box">$ <span id="cash-display">0</span></div>
+    <div id="hud">
+        <div class="hud-item">ESCUDO: <span id="shield-txt">100</span>%</div>
+        <div class="hud-item">KILLS: <span id="kills-txt">0</span></div>
+        <div class="hud-item">VEL: <span id="vel-txt" style="color:#00ffcc">0</span> km/h</div>
     </div>
 
-    <button id="shop-trigger" onclick="toggleShop(true)">LOJA DE ARMAS</button>
+    <canvas id="spaceCanvas"></canvas>
 
-    <!-- Joystick de Movimento (Esquerdo) -->
-    <div id="move-joystick-container" class="joystick-container">
-        <div id="move-stick" class="joystick-stick"></div>
-    </div>
-
-    <!-- Joystick de Mira/Tiro (Direito) -->
-    <div id="aim-joystick-container" class="joystick-container">
-        <div id="aim-stick" class="joystick-stick"></div>
-    </div>
-
-    <!-- Modal Game Over -->
     <div id="gameover-modal" class="modal">
-        <h1 id="game-title">GAME OVER</h1>
-        <p style="margin-bottom: 20px; color: #888;">Seu recorde foi de <span id="final-score" style="color:#00ffcc">0</span> pontos.</p>
-        <button class="btn" onclick="restartGame()">JOGAR NOVAMENTE</button>
-    </div>
-
-    <!-- Modal Loja -->
-    <div id="shop-modal" class="modal">
-        <h1>LOJA VORTEX</h1>
-        <div class="shop-grid" id="shop-grid"></div>
-        <button class="btn" style="background:#333; box-shadow:none;" onclick="toggleShop(false)">VOLTAR AO JOGO</button>
+        <h1>NAVE DESTRUÍDA</h1>
+        <p style="margin-bottom: 30px; color: #888;">Seu esquadrão abateu <span id="final-kills" style="color:#ff0055">0</span> naves inimigas.</p>
+        <button class="btn" onclick="restartGame()">REINICIAR SISTEMAS</button>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('spaceCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Ajustar tamanho do Canvas dinamicamente
-        function resizeCanvas() {
+        function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resize);
+        resize();
 
-        // Configurações Globais do Jogo
-        let gameActive = true;
-        let score = 0;
-        let cash = 0;
-        let lastBotSpawn = 0;
-        let botSpawnInterval = 2500; // 2.5 segundos
+        // Estados Globais
+        let running = true;
+        let kills = 0;
+        let lastSpawn = 0;
+        const stars = [];
 
-        // Configuração das Armas disponíveis
-        const weapons = {
-            pistol: { name: "Pistola Neon", damage: 25, speed: 10, fireRate: 400, color: "#00ffcc", price: 0, owned: true },
-            smg: { name: "Submetralhadora", damage: 20, speed: 12, fireRate: 150, color: "#ffff00", price: 150, owned: false },
-            shotgun: { name: "Espingarda Impacto", damage: 15, speed: 8, fireRate: 800, color: "#ff00ff", price: 300, owned: false, spread: true },
-            rifle: { name: "Rifle Laser", damage: 55, speed: 18, fireRate: 350, color: "#ff0055", price: 600, owned: false }
-        };
-
-        // Estado do Jogador
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 18,
-            color: '#00ffcc',
-            hp: 100,
-            maxHp: 100,
-            speed: 3.5,
-            angle: 0,
-            currentWeapon: 'pistol',
-            lastShot: 0,
-            dashCooldown: 0,
-            pulseAnim: 0
-        };
-
-        // Listas de entidades
-        let entities = {
-            bots: [],
-            bullets: [],
-            particles: []
-        };
-
-        // Dados dos Joysticks
-        const joysticks = {
-            move: { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0, dirX: 0, dirY: 0 },
-            aim: { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0, dirX: 0, dirY: 0 }
-        };
-
-        // Setup dos inputs touch para os Joysticks
-        setupJoystick('move-joystick-container', 'move-stick', joysticks.move);
-        setupJoystick('aim-joystick-container', 'aim-stick', joysticks.aim);
-
-        function setupJoystick(containerId, stickId, joyState) {
-            const container = document.getElementById(containerId);
-            const stick = document.getElementById(stickId);
-            const maxDistance = 45;
-
-            container.addEventListener('touchstart', (e) => {
-                joyState.active = true;
-                const touch = e.touches[0];
-                const rect = container.getBoundingClientRect();
-                joyState.startX = rect.left + rect.width / 2;
-                joyState.startY = rect.top + rect.height / 2;
-            }, {passive: true});
-
-            window.addEventListener('touchmove', (e) => {
-                if (!joyState.active) return;
-                
-                let currentTouch = null;
-                for(let t of e.touches) {
-                    if(containerId === 'move-joystick-container' && t.clientX < window.innerWidth/2) currentTouch = t;
-                    if(containerId === 'aim-joystick-container' && t.clientX >= window.innerWidth/2) currentTouch = t;
-                }
-                if(!currentTouch) currentTouch = e.touches[0];
-
-                let dx = currentTouch.clientX - joyState.startX;
-                let dy = currentTouch.clientY - joyState.startY;
-                let distance = Math.sqrt(dx*dx + dy*dy);
-
-                if (distance > maxDistance) {
-                    dx = (dx / distance) * maxDistance;
-                    dy = (dy / distance) * maxDistance;
-                    distance = maxDistance;
-                }
-
-                joyState.moveX = dx;
-                joyState.moveY = dy;
-                joyState.dirX = dx / maxDistance;
-                joyState.dirY = dy / maxDistance;
-
-                stick.style.transform = `translate(${dx}px, ${dy}px)`;
-            }, {passive: true});
-
-            const endHandler = () => {
-                joyState.active = false;
-                joyState.moveX = 0; joyState.moveY = 0;
-                joyState.dirX = 0; joyState.dirY = 0;
-                stick.style.transform = 'translate(0px, 0px)';
-            };
-
-            container.addEventListener('touchend', endHandler);
-            container.addEventListener('touchcancel', endHandler);
-        }
-
-        // Criar Partículas (Animação de Sangue/Faíscas)
-        function spawnParticles(x, y, color, count = 8) {
-            for (let i = 0; i < count; i++) {
-                entities.particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6,
-                    radius: Math.random() * 3 + 1,
-                    color: color,
-                    alpha: 1,
-                    decay: Math.random() * 0.03 + 0.02
-                });
-            }
-        }
-
-        // Atirar
-        function shoot(shooter, angle, isBot = false) {
-            const now = Date.now();
-            const wpn = isBot ? { speed: 6, damage: 10, color: '#ff0055' } : weapons[player.currentWeapon];
-            
-            if (!isBot && now - player.lastShot < wpn.fireRate) return;
-            if (!isBot) player.lastShot = now;
-
-            const spawnBullet = (ang) => {
-                entities.bullets.push({
-                    x: shooter.x + Math.cos(angle) * shooter.radius,
-                    y: shooter.y + Math.sin(angle) * shooter.radius,
-                    vx: Math.cos(ang) * wpn.speed,
-                    vy: Math.sin(ang) * wpn.speed,
-                    radius: isBot ? 4 : 5,
-                    color: wpn.color,
-                    damage: wpn.damage,
-                    isBot: isBot
-                });
-            };
-
-            if (!isBot && wpn.spread) {
-                // Tiro espalhado estilo Shotgun
-                spawnBullet(angle - 0.15);
-                spawnBullet(angle);
-                spawnBullet(angle + 0.15);
-            } else {
-                spawnBullet(angle);
-            }
-        }
-
-        // Injetar Inteligência Artificial nos Bots
-        function spawnBot() {
-            if (entities.bots.length >= 12) return; // Limite de bots ativos
-
-            // Spawn fora da tela visível para não dar instakill
-            let x, y;
-            if (Math.random() < 0.5) {
-                x = Math.random() < 0.5 ? -30 : canvas.width + 30;
-                y = Math.random() * canvas.height;
-            } else {
-                x = Math.random() * canvas.width;
-                y = Math.random() < 0.5 ? -30 : canvas.height + 30;
-            }
-
-            // Tipos de bots aleatórios
-            const types = [
-                { color: '#ff3333', speed: 1.8, hp: 40, maxHp: 40, size: 16, reward: 20 }, // Normal
-                { color: '#ffaa00', speed: 2.8, hp: 20, maxHp: 20, size: 14, reward: 30 }, // Veloz
-                { color: '#9900ff', speed: 1.2, hp: 90, maxHp: 90, size: 22, reward: 50 }  // Tanque
-            ];
-            const profile = types[Math.floor(Math.random() * types.length)];
-
-            entities.bots.push({
-                x: x, y: y,
-                radius: profile.size,
-                color: profile.color,
-                speed: profile.speed,
-                hp: profile.hp,
-                maxHp: profile.maxHp,
-                reward: profile.reward,
-                lastShot: 0,
-                shootInterval: 1500 + Math.random() * 1000
+        // Gerar Fundo Estelar (Efeito Parallax)
+        for(let i=0; i<60; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1
             });
         }
 
-        // Renderizar Elementos Gráficos e Atualizar Lógica
-        function update() {
-            if (!gameActive) return;
+        // FÍSICA APLICADA: Jogador Espacial (Estilo Asteroids Premium)
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: 0, // Velocidade Vetorial X
+            vy: 0, // Velocidade Vetorial Y
+            acceleration: 0.18,
+            friction: 0.98, // Atrito do vácuo reduzido para dar sensação de espaço
+            maxSpeed: 6,
+            angle: 0,
+            radius: 16,
+            shield: 100,
+            lastShot: 0,
+            fireRate: 200 // Milissegundos
+        };
 
-            // 1. Movimentação do Jogador
-            if (joysticks.move.active) {
-                player.x += joysticks.move.dirX * player.speed;
-                player.y += joysticks.move.dirY * player.speed;
-                
-                // Limites da tela
-                player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-                player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-                
-                if (!joysticks.aim.active) {
-                    player.angle = Math.atan2(joysticks.move.dirY, joysticks.move.dirX);
+        // Listas do Sistema
+        const enemies = [];
+        const lasers = [];
+        const particles = [];
+
+        // ESTRUTURA DOS ANALÓGICOS VIRTUAIS (Fix de Toque para WebView do Sketchware)
+        // Definindo áreas fixas invisíveis para evitar travamento do DOM externo
+        const joyMove = { x: 80, y: 0, radOuter: 50, radInner: 22, touchId: null, currX: 80, currY: 0, active: false, outX: 0, outY: 0 };
+        const joyAim = { x: 0, y: 0, radOuter: 50, radInner: 22, touchId: null, currX: 0, currY: 0, active: false, outX: 0, outY: 0 };
+
+        function updateJoystickPositions() {
+            joyMove.y = canvas.height - 90;
+            joyAim.x = canvas.width - 80;
+            joyAim.y = canvas.height - 90;
+            joyMove.currX = joyMove.x; joyMove.currY = joyMove.y;
+            joyAim.currX = joyAim.x; joyAim.currY = joyAim.y;
+        }
+        updateJoystickPositions();
+        window.addEventListener('resize', updateJoystickPositions);
+
+        // Captura Robusta de Toques Multi-Touch sem vinculo com elementos HTML
+        window.addEventListener('touchstart', (e) => {
+            for(let touch of e.changedTouches) {
+                // Lado Esquerdo - Movimento
+                if(touch.clientX < canvas.width / 2 && joyMove.touchId === null) {
+                    joyMove.touchId = touch.identifier;
+                    joyMove.active = true;
+                    handleJoyMove(joyMove, touch.clientX, touch.clientY);
+                }
+                // Lado Direito - Mira e Tiro
+                if(touch.clientX >= canvas.width / 2 && joyAim.touchId === null) {
+                    joyAim.touchId = touch.identifier;
+                    joyAim.active = true;
+                    handleJoyMove(joyAim, touch.clientX, touch.clientY);
                 }
             }
+        }, { passive: false });
 
-            // 2. Mira e Ataque do Jogador
-            if (joysticks.aim.active) {
-                player.angle = Math.atan2(joysticks.aim.dirY, joysticks.aim.dirX);
-                shoot(player, player.angle, false);
-            }
-
-            // Animação sutil de pulsação no player
-            player.pulseAnim += 0.05;
-
-            // 3. Processar Balas
-            for (let i = entities.bullets.length - 1; i >= 0; i--) {
-                let b = entities.bullets[i];
-                b.x += b.vx;
-                b.y += b.vy;
-
-                // Destruir bala se sair da tela
-                if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-                    entities.bullets.splice(i, 1);
-                    continue;
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Mata qualquer tentativa de scroll ou travamento do Android
+            for(let touch of e.touches) {
+                if(touch.identifier === joyMove.touchId) {
+                    handleJoyMove(joyMove, touch.clientX, touch.clientY);
                 }
-
-                // Colisão: Bala do jogador nos Bots
-                if (!b.isBot) {
-                    for (let j = entities.bots.length - 1; j >= 0; j--) {
-                        let bot = entities.bots[j];
-                        let dist = Math.hypot(b.x - bot.x, b.y - bot.y);
-                        if (dist < b.radius + bot.radius) {
-                            bot.hp -= b.damage;
-                            spawnParticles(b.x, b.y, bot.color, 6);
-                            entities.bullets.splice(i, 1);
-
-                            if (bot.hp <= 0) {
-                                spawnParticles(bot.x, bot.y, bot.color, 15);
-                                score += 10;
-                                cash += bot.reward;
-                                updateUI();
-                                entities.bots.splice(j, 1);
-                            }
-                            break;
-                        }
-                    }
-                } 
-                // Colisão: Bala dos Bots no Jogador
-                else {
-                    let dist = Math.hypot(b.x - player.x, b.y - player.y);
-                    if (dist < b.radius + player.radius) {
-                        player.hp -= b.damage;
-                        spawnParticles(b.x, b.y, '#ff0000', 10);
-                        updateUI();
-                        entities.bullets.splice(i, 1);
-
-                        if (player.hp <= 0) {
-                            gameOver();
-                        }
-                    }
+                if(touch.identifier === joyAim.touchId) {
+                    handleJoyMove(joyAim, touch.clientX, touch.clientY);
                 }
             }
+        }, { passive: false });
 
-            // 4. Processar Bots (Movimento IA e Ataque)
-            const now = Date.now();
-            for (let bot of entities.bots) {
-                let dx = player.x - bot.x;
-                let dy = player.y - bot.y;
-                let dist = Math.hypot(dx, dy);
-
-                // IA de perseguição direcionada
-                let angleToPlayer = Math.atan2(dy, dx);
-                bot.x += Math.cos(angleToPlayer) * bot.speed;
-                bot.y += Math.sin(angleToPlayer) * bot.speed;
-
-                // IA de Disparo do Bot (atira se estiver perto)
-                if (dist < 350 && now - bot.lastShot > bot.shootInterval) {
-                    bot.lastShot = now;
-                    shoot(bot, angleToPlayer, true);
+        const endTouchHandler = (e) => {
+            for(let touch of e.changedTouches) {
+                if(touch.identifier === joyMove.touchId) {
+                    joyMove.touchId = null; joyMove.active = false;
+                    joyMove.currX = joyMove.x; joyMove.currY = joyMove.y;
+                    joyMove.outX = 0; joyMove.outY = 0;
+                }
+                if(touch.identifier === joyAim.touchId) {
+                    joyAim.touchId = null; joyAim.active = false;
+                    joyAim.currX = joyAim.x; joyAim.currY = joyAim.y;
+                    joyAim.outX = 0; joyAim.outY = 0;
                 }
             }
+        };
+        window.addEventListener('touchend', endTouchHandler);
+        window.addEventListener('touchcancel', endTouchHandler);
 
-            // 5. Partículas de Efeito
-            for (let i = entities.particles.length - 1; i >= 0; i--) {
-                let p = entities.particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= p.decay;
-                if (p.alpha <= 0) entities.particles.splice(i, 1);
+        function handleJoyMove(joy, clientX, clientY) {
+            let dx = clientX - joy.x;
+            let dy = clientY - joy.y;
+            let dist = Math.hypot(dx, dy);
+
+            if(dist > joy.radOuter) {
+                dx = (dx / dist) * joy.radOuter;
+                dy = (dy / dist) * joy.radOuter;
+                dist = joy.radOuter;
             }
+            joy.currX = joy.x + dx;
+            joy.currY = joy.y + dy;
+            joy.outX = dx / joy.radOuter;
+            joy.outY = dy / joy.radOuter;
+        }
 
-            // Gerenciar Spawns de novos inimigos
-            if (now - lastBotSpawn > botSpawnInterval) {
-                spawnBot();
-                lastBotSpawn = now;
-                // Dificuldade progressiva sutil
-                if (botSpawnInterval > 900) botSpawnInterval -= 25;
+        // Invocação de Explosões de Partículas Físicas
+        function explode(x, y, color, amount=12) {
+            for(let i=0; i<amount; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: Math.random() * 3 + 1,
+                    color: color,
+                    life: 1.0,
+                    decay: Math.random() * 0.04 + 0.02
+                });
             }
         }
 
-        // Renderização Visual Completa (Canvas)
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Sistema de Disparo Coerente
+        function fireLaser(shooter, angle, isEnemy=false) {
+            lasers.push({
+                x: shooter.x + Math.cos(angle) * shooter.radius,
+                y: shooter.y + Math.sin(angle) * shooter.radius,
+                vx: Math.cos(angle) * (isEnemy ? 5 : 9),
+                vy: Math.sin(angle) * (isEnemy ? 5 : 9),
+                radius: isEnemy ? 3 : 4,
+                color: isEnemy ? '#ff3366' : '#00ffcc',
+                isEnemy: isEnemy
+            });
+        }
 
-            // Desenhar Grid de fundo para dar noção de movimento (Premium Touch)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
-            ctx.lineWidth = 1;
-            const gridSize = 50;
-            for (let x = 0; x < canvas.width; x += gridSize) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        // Inimigos Inteligentes (IA Perseguguidora de Quadrante)
+        function spawnEnemy() {
+            if(enemies.length >= 8 || !running) return;
+            let x = Math.random() < 0.5 ? -40 : canvas.width + 40;
+            let y = Math.random() * canvas.height;
+            
+            enemies.push({
+                x: x, y: y,
+                vx: 0, vy: 0,
+                radius: 14,
+                speed: 1.5,
+                color: '#ff3366',
+                lastShot: 0,
+                fireInterval: 1800 + Math.random() * 1000
+            });
+        }
+
+        // LOOP PRINCIPAL DE LÓGICA E FÍSICA (Update Engine)
+        function update() {
+            if(!running) return;
+
+            // 1. Aplicar Física de Inércia na Nave do Jogador
+            if(joyMove.active) {
+                player.vx += joyMove.outX * player.acceleration;
+                player.vy += joyMove.outY * player.acceleration;
+                
+                // Limitar velocidade máxima vetorial
+                let currentSpeed = Math.hypot(player.vx, player.vy);
+                if(currentSpeed > player.maxSpeed) {
+                    player.vx = (player.vx / currentSpeed) * player.maxSpeed;
+                    player.vy = (player.vy / currentSpeed) * player.maxSpeed;
+                }
+                
+                // Rotacionar para direção do movimento caso não esteja mirando
+                if(!joyAim.active) {
+                    player.angle = Math.atan2(joyMove.outY, joyMove.outX);
+                }
             }
-            for (let y = 0; y < canvas.height; y += gridSize) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+
+            // Aplicar atrito natural do espaço (desaceleração suave)
+            player.vx *= player.friction;
+            player.vy *= player.friction;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Bloqueio de bordas físicas do cenário
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            // Atualizar HUD de velocidade em tempo real
+            document.getElementById('vel-txt').innerText = Math.round(Math.hypot(player.vx, player.vy) * 20);
+
+            // 2. Giro de Câmera/Mira e Disparo Automático Dinâmico
+            if(joyAim.active) {
+                player.angle = Math.atan2(joyAim.outY, joyAim.outX);
+                let now = Date.now();
+                if(now - player.lastShot > player.fireRate) {
+                    fireLaser(player, player.angle, false);
+                    player.lastShot = now;
+                }
+            }
+
+            // 3. Gerenciamento de Lasers (Mapeamento e Colisão Vetorial)
+            for(let i = lasers.length - 1; i >= 0; i--) {
+                let l = lasers[i];
+                l.x += l.vx; l.y += l.vy;
+
+                if(l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height) {
+                    lasers.splice(i, 1);
+                    continue;
+                }
+
+                if(!l.isEnemy) {
+                    // Laser do Player acertando Inimigos
+                    for(let j = enemies.length - 1; j >= 0; j--) {
+                        let e = enemies[j];
+                        if(Math.hypot(l.x - e.x, l.y - e.y) < l.radius + e.radius) {
+                            explode(e.x, e.y, e.color, 14);
+                            enemies.splice(j, 1);
+                            lasers.splice(i, 1);
+                            kills++;
+                            document.getElementById('kills-txt').innerText = kills;
+                            break;
+                        }
+                    }
+                } else {
+                    // Laser Inimigo acertando Player
+                    if(Math.hypot(l.x - player.x, l.y - player.y) < l.radius + player.radius) {
+                        explode(player.x, player.y, '#00ffcc', 8);
+                        player.shield -= 15;
+                        document.getElementById('shield-txt').innerText = Math.max(0, player.shield);
+                        lasers.splice(i, 1);
+
+                        if(player.shield <= 0) {
+                            explode(player.x, player.y, '#ffffff', 30);
+                            running = false;
+                            document.getElementById('final-kills').innerText = kills;
+                            document.getElementById('gameover-modal').classList.add('active');
+                        }
+                    }
+                }
+            }
+
+            // 4. Inteligência Artificial dos Inimigos (Aproximação Suave com Física)
+            let now = Date.now();
+            for(let e of enemies) {
+                let angToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
+                
+                // Física de empuxo simulada para os bots
+                e.vx += Math.cos(angToPlayer) * 0.05;
+                e.vy += Math.sin(angToPlayer) * 0.05;
+                e.vx *= 0.97; e.vy *= 0.97;
+                e.x += e.vx; e.y += e.vy;
+
+                // IA decide atirar baseado em proximidade estruturada
+                if(Math.hypot(player.x - e.x, player.y - e.y) < 280 && now - e.lastShot > e.fireInterval) {
+                    fireLaser(e, angToPlayer, true);
+                    e.lastShot = now;
+                }
+            }
+
+            // 5. Partículas Físicas
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= p.decay;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+
+            // Controle de Spawns Gradativos
+            if(now - lastSpawn > 2000) {
+                spawnEnemy();
+                lastSpawn = now;
+            }
+        }
+
+        // RENDERIZAÇÃO ESTILIZADA (Desenho Gráfico)
+        function draw() {
+            ctx.fillStyle = '#020205';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar Estrelas (Fundo Animado)
+            ctx.fillStyle = '#ffffff';
+            for(let s of stars) {
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+                if(running) {
+                    // Move as estrelas no sentido oposto da nave para efeito de velocidade real
+                    s.y += s.speed + (player.vy * -0.1);
+                    s.x += (player.vx * -0.1);
+                    if(s.y > canvas.height) s.y = 0;
+                    if(s.x > canvas.width) s.x = 0;
+                    if(s.x < 0) s.x = canvas.width;
+                }
             }
 
             // Desenhar Partículas
-            for (let p of entities.particles) {
+            for(let p of particles) {
                 ctx.save();
-                ctx.globalAlpha = p.alpha;
+                ctx.globalAlpha = p.life;
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
                 ctx.fill();
                 ctx.restore();
             }
 
-            // Desenhar Balas
-            for (let b of entities.bullets) {
-                ctx.fillStyle = b.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = b.color;
+            // Desenhar Lasers Cósmicos
+            for(let l of lasers) {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = l.color;
+                ctx.fillStyle = l.color;
                 ctx.beginPath();
-                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.arc(l.x, l.y, l.radius, 0, Math.PI*2);
                 ctx.fill();
-                ctx.shadowBlur = 0; // Reset
+                ctx.restore();
             }
 
-            // Desenhar Inimigos (Bots)
-            for (let bot of entities.bots) {
-                // Corpo do Bot
-                ctx.fillStyle = bot.color;
+            // Desenhar Naves Inimigas (Design de Triângulo Invertido Vermelho)
+            for(let e of enemies) {
+                ctx.save();
+                ctx.translate(e.x, e.y);
+                ctx.rotate(Math.atan2(player.y - e.y, player.x - e.x));
+                ctx.fillStyle = e.color;
                 ctx.beginPath();
-                ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
+                ctx.moveTo(12, 0);
+                ctx.lineTo(-10, -10);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(-10, 10);
+                ctx.closePath();
                 ctx.fill();
+                ctx.restore();
+            }
 
-                // Barra de vida interna minúscula do Bot
-                let barW = bot.radius * 1.5;
-                let barH = 3;
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(bot.x - barW/2, bot.y - bot.radius - 8, barW, barH);
+            // Desenhar Nave do Jogador (Design Premium Geométrico Neon)
+            if(running) {
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                ctx.rotate(player.angle);
+                
+                // Brilho do reator traseiro
+                if(joyMove.active) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ffaa00';
+                    ctx.fillStyle = '#ff5500';
+                    ctx.fillRect(-18, -4, 8, 8);
+                }
+
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#00ffcc';
                 ctx.fillStyle = '#00ffcc';
-                ctx.fillRect(bot.x - barW/2, bot.y - bot.radius - 8, barW * (bot.hp / bot.maxHp), barH);
+
+                // Corpo da Nave Espacial
+                ctx.beginPath();
+                ctx.moveTo(16, 0); // Bico apontado para a frente da rotação
+                ctx.lineTo(-12, -12);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(-12, 12);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
             }
 
-            // Desenhar Jogador Principal (Animação e Arma)
+            // DESENHAR JOYSTICKS DIRETOS NO CANVAS (Evita quebras de layout do WebView)
+            drawJoystick(joyMove, '#00ffcc');
+            drawJoystick(joyAim, '#ff3366');
+        }
+
+        function drawJoystick(joy, color) {
+            if(!joy.active && joy.x === 0) return; // Aguarda resize inicial
             ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.rotate(player.angle);
-
-            // Brilho de efeito neon do player
-            ctx.shadowBlur = 12 + Math.sin(player.pulseAnim) * 4;
-            ctx.shadowColor = player.color;
-
-            // Design do Personagem (Visual Core)
-            ctx.fillStyle = player.color;
+            ctx.globalAlpha = joy.active ? 0.4 : 0.15;
+            
+            // Base externa do analógico
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            ctx.arc(joy.x, joy.y, joy.radOuter, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Centro arrastável do analógico
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(joy.currX, joy.currY, joy.radInner, 0, Math.PI*2);
             ctx.fill();
-
-            // Renderizar Arma Equipada de acordo com a rotação
-            const currentWpnObj = weapons[player.currentWeapon];
-            ctx.fillStyle = currentWpnObj.color;
-            ctx.fillRect(10, -4, 18, 8); // Cano da arma
-
             ctx.restore();
         }
 
-        // Loop Principal do Game Engine
-        function gameLoop() {
+        // Loop de Atualização de Quadros Constante
+        function loop() {
             update();
             draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Atualizar Textos da Interface
-        function updateUI() {
-            document.getElementById('hp-display').innerText = Math.max(0, player.hp);
-            document.getElementById('score-display').innerText = score;
-            document.getElementById('cash-display').innerText = cash;
-        }
-
-        // Telas e Modais (Game Over & Shop)
-        function gameOver() {
-            gameActive = false;
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-title').innerText = "VORTEX STRIKE";
-            document.getElementById('gameover-modal').classList.add('active');
+            requestAnimationFrame(loop);
         }
 
         function restartGame() {
-            player.hp = 100;
+            player.shield = 100;
             player.x = canvas.width / 2;
             player.y = canvas.height / 2;
-            score = 0;
-            cash = 0;
-            botSpawnInterval = 2500;
-            entities.bots = [];
-            entities.bullets = [];
-            entities.particles = [];
-            player.currentWeapon = 'pistol';
-            updateUI();
+            player.vx = 0; player.vy = 0;
+            kills = 0;
+            enemies.length = 0;
+            lasers.length = 0;
+            document.getElementById('shield-txt').innerText = 100;
+            document.getElementById('kills-txt').innerText = 0;
             document.getElementById('gameover-modal').classList.remove('active');
-            gameActive = true;
+            running = true;
         }
 
-        function toggleShop(open) {
-            if (open) {
-                gameActive = false;
-                renderShop();
-                document.getElementById('shop-modal').classList.add('active');
-            } else {
-                document.getElementById('shop-modal').classList.remove('active');
-                gameActive = true;
-            }
-        }
-
-        function renderShop() {
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = '';
-            
-            for (let key in weapons) {
-                let w = weapons[key];
-                let item = document.createElement('div');
-                item.className = `shop-item ${w.owned ? 'owned' : ''}`;
-                
-                let btnText = w.owned ? (player.currentWeapon === key ? "EQUIPADO" : "EQUIPAR") : `COMPRAR $${w.price}`;
-                let btnClass = (!w.owned && cash >= w.price) || w.owned ? 'buyable' : '';
-
-                item.innerHTML = `
-                    <h3 style="color:${w.color}; font-size:15px;">${w.name}</h3>
-                    <p>Dano: ${w.damage} | Vel: ${w.fireRate}ms</p>
-                    <button class="${btnClass}" onclick="handleShopAction('${key}')">${btnText}</button>
-                `;
-                grid.appendChild(item);
-            }
-        }
-
-        function handleShopAction(key) {
-            let w = weapons[key];
-            if (w.owned) {
-                player.currentWeapon = key;
-            } else if (cash >= w.price) {
-                cash -= w.price;
-                w.owned = true;
-                player.currentWeapon = key;
-                updateUI();
-            }
-            renderShop();
-        }
-
-        // Início Inicializador
-        updateUI();
-        lastBotSpawn = Date.now();
-        gameLoop();
+        // Inicialização
+        loop();
     </script>
 </body>
 </html>
