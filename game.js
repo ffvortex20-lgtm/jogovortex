@@ -1,298 +1,301 @@
-const canvas = document.getElementById('bwCanvas');
-const ctx = canvas.getContext('2d');
+// Detectar Plataforma
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+if (isMobile) {
+    document.getElementById('mobile-controls').style.display = 'block';
 }
-window.addEventListener('resize', resize);
-resize();
 
-// Estado e Inventário
+// Configuração do Cenário 3D (Three.js)
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x5c94fc); // Céu azul clássico do Bloxd
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Luzes do Ambiente
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(20, 40, 20);
+scene.add(dirLight);
+
+// Variáveis de Jogo e Física Básica
 let inventory = { iron: 0, gold: 0, blocks: 0 };
-let activeSlot = 0; 
+let activeSlot = 0;
 let currentTab = 'blocks';
 
+// Parâmetros de Movimento e Gravidade
+const player = {
+    height: 1.8,
+    speed: 0.12,
+    velocityY: 0,
+    gravity: 0.012,
+    jumpForce: 0.22,
+    canJump: true,
+    hp: 100,
+    dmg: 20
+};
+
+// Dados da Loja
 const shopData = {
     blocks: [
         { id: 'wool', name: 'Lã x16', costType: 'iron', cost: 8, amount: 16 },
         { id: 'wood', name: 'Madeira x16', costType: 'iron', cost: 16, amount: 16 }
     ],
     combat: [
-        { id: 'stone_sword', name: 'Espada Pedra', costType: 'iron', cost: 24, dmg: 25 },
-        { id: 'iron_armor', name: 'Armadura Ferro', costType: 'gold', cost: 12 }
+        { id: 'stone_sword', name: 'Espada Pedra', costType: 'iron', cost: 24, dmg: 35 }
     ],
     utility: [
-        { id: 'stone_pick', name: 'Picareta Pedra', costType: 'iron', cost: 24 },
         { id: 'apple', name: 'Maçã (Cura)', costType: 'iron', cost: 6 }
     ]
 };
 
-let blueBedAlive = true;
-let redBedAlive = true;
+// Estrutura Física do Mapa por Coordenadas de Blocos (Voxel Grid)
+const blockMap = new Map(); // Guarda a posição "x,y,z" dos blocos
+const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+const greenMaterial = new THREE.MeshLambertMaterial({ color: 0x7bec5c });
+const greyMaterial = new THREE.MeshLambertMaterial({ color: 0xd1d8e0 });
+const blueMaterial = new THREE.MeshLambertMaterial({ color: 0x2e66ff });
+const redMaterial = new THREE.MeshLambertMaterial({ color: 0xff3e3e });
 
-// Entidades com Parâmetros de Física Física
-const player = {
-    x: 100, y: 150, radius: 12, speed: 3.2, angle: 0,
-    hp: 100, maxHp: 100, dmg: 15
-};
-
-const bot = {
-    x: 520, y: 150, radius: 12, speed: 2.0, angle: 0,
-    hp: 100, lastAttack: 0
-};
-
-// Configuração de Blocos do Mundo (Grid de Construção)
-const blockSize = 32;
-let mapBlocks = [];
-
-function initMap() {
-    // Geração da Ilha do Jogador (Azul - Esquerda)
-    for(let i=1; i<6; i++) {
-        for(let j=3; j<8; j++) {
-            mapBlocks.push({x: i*blockSize, y: j*blockSize, type: 'island'});
-        }
-    }
-    // Geração da Ilha do Bot (Vermelha - Direita)
-    for(let i=15; i<20; i++) {
-        for(let j=3; j<8; j++) {
-            mapBlocks.push({x: i*blockSize, y: j*blockSize, type: 'island'});
-        }
-    }
-}
-initMap();
-
-const blueBed = { x: 48, y: 160, w: 40, h: 25 };
-const redBed = { x: 590, y: 160, w: 40, h: 25 };
-const ironGenerator = { x: 96, y: 220, lastSpawn: 0 };
-
-// Analógico Embutido no Canvas para prevenir interceptações do Android
-const joyMove = { x: 80, y: 0, rOut: 45, rIn: 18, tId: null, cx: 80, cy: 0, active: false, dx: 0, dy: 0 };
-function initJoystick() {
-    joyMove.y = canvas.height - 85;
-    joyMove.cx = joyMove.x; joyMove.cy = joyMove.y;
-}
-initJoystick();
-window.addEventListener('resize', initJoystick);
-
-// Captura Multi-Touch Independente
-window.addEventListener('touchstart', (e) => {
-    for(let t of e.changedTouches) {
-        if(t.clientX < canvas.width / 2 && joyMove.tId === null) {
-            joyMove.tId = t.identifier;
-            joyMove.active = true;
-            updateJoy(t.clientX, t.clientY);
-        } else if(t.clientX >= canvas.width / 2) {
-            handleBuildBlock(t.clientX, t.clientY);
-        }
-    }
-});
-
-window.addEventListener('touchmove', (e) => {
-    for(let t of e.touches) {
-        if(t.identifier === joyMove.tId) updateJoy(t.clientX, t.clientY);
-    }
-});
-
-const endTouch = (e) => {
-    for(let t of e.changedTouches) {
-        if(t.identifier === joyMove.tId) {
-            joyMove.tId = null; joyMove.active = false;
-            joyMove.cx = joyMove.x; joyMove.cy = joyMove.y;
-            joyMove.dx = 0; joyMove.dy = 0;
-        }
-    }
-};
-window.addEventListener('touchend', endTouch);
-window.addEventListener('touchcancel', endTouch);
-
-function updateJoy(tx, ty) {
-    let dx = tx - joyMove.x;
-    let dy = ty - joyMove.y;
-    let dist = Math.hypot(dx, dy);
-    if(dist > joyMove.rOut) {
-        dx = (dx / dist) * joyMove.rOut;
-        dy = (dy / dist) * joyMove.rOut;
-    }
-    joyMove.cx = joyMove.x + dx;
-    joyMove.cy = joyMove.y + dy;
-    joyMove.dx = dx / joyMove.rOut;
-    joyMove.dy = dy / joyMove.rOut;
+// Gerador de Blocos no Mundo
+function addBlockToWorld(x, y, z, material, type='island') {
+    const mesh = new THREE.Mesh(blockGeometry, material);
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    blockMap.set(`${x},${y},${z}`, { mesh: mesh, type: type });
 }
 
-// Mecânica de Posicionamento de Bloco pelo Toque
-function handleBuildBlock(screenX, screenY) {
+// Gerar Ilha Azul (Início) e Vermelha
+function createWorldGrid() {
+    // Ilha do Jogador (Azul)
+    for(let x = -4; x <= 4; x++) {
+        for(let z = -4; z <= 4; z++) {
+            addBlockToWorld(x, 0, z, greenMaterial);
+        }
+    }
+    // Cama Azul
+    addBlockToWorld(0, 1, -3, blueMaterial, 'blue_bed');
+
+    // Ilha Inimiga (Vermelha)
+    for(let x = -4; x <= 4; x++) {
+        for(let z = 20; z <= 28; z++) {
+            addBlockToWorld(x, 0, z, greenMaterial);
+        }
+    }
+    // Cama Vermelha
+    addBlockToWorld(0, 1, 26, redMaterial, 'red_bed');
+}
+createWorldGrid();
+
+// Posicionar Câmera no ponto de Spawn Inicial
+camera.position.set(0, player.height, 3);
+let yaw = 0;   // Rotação Esquerda/Direita
+let pitch = 0; // Rotação Cima/Baixo
+
+// ======================================================
+// CONTROLES DE COMPUTADOR (Teclado e Mouse PointerLock)
+// ======================================================
+const keys = { w: false, a: false, s: false, d: false, Space: false };
+
+if (!isMobile) {
+    // Ativa clique para travar o mouse na tela (Igual Bloxd)
+    window.addEventListener('click', () => {
+        if(document.getElementById('shop-modal').style.display !== 'grid') {
+            renderer.domElement.requestPointerLock();
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (document.pointerLockElement === renderer.domElement) {
+            yaw -= e.movementX * 0.0025;
+            pitch -= e.movementY * 0.0025;
+            pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+        }
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if(e.code === 'KeyB') toggleShop(true);
+        if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true;
+        if(e.code === 'Space') keys.Space = true;
+        
+        // Atalhos de Hotbar no PC
+        if(e.key === '1') setSlot(0);
+        if(e.key === '2') setSlot(1);
+        if(e.key === '3') setSlot(2);
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false;
+        if(e.code === 'Space') keys.Space = false;
+    });
+
+    // Cliques do Mouse (Ataque e Bloco)
+    window.addEventListener('mousedown', (e) => {
+        if (document.pointerLockElement === renderer.domElement) {
+            if(e.button === 0) performAttackAction(); // Botão Esquerdo
+            if(e.button === 2) performPlaceBlock();  // Botão Direito
+        }
+    });
+}
+
+// ======================================================
+// CONTROLES DE ANDROID (Joysticks Táteis por Coordenadas)
+// ======================================================
+let touchMoveData = { dx: 0, dy: 0 };
+let touchLookData = { dx: 0, dy: 0 };
+
+if (isMobile) {
+    const joyMoveEl = document.getElementById('joystick-move');
+    const joyLookEl = document.getElementById('joystick-look');
+
+    // Toque para andar
+    joyMoveEl.addEventListener('touchmove', (e) => {
+        let t = e.touches[0];
+        let rect = joyMoveEl.getBoundingClientRect();
+        let cx = rect.left + rect.width/2;
+        let cy = rect.top + rect.height/2;
+        touchMoveData.dx = (t.clientX - cx) / (rect.width/2);
+        touchMoveData.dy = (t.clientY - cy) / (rect.height/2);
+    });
+    joyMoveEl.addEventListener('touchend', () => { touchMoveData = { dx: 0, dy: 0 }; });
+
+    // Toque para olhar/girar câmera
+    joyLookEl.addEventListener('touchmove', (e) => {
+        let t = e.touches[0];
+        let rect = joyLookEl.getBoundingClientRect();
+        let cx = rect.left + rect.width/2;
+        let cy = rect.top + rect.height/2;
+        yaw -= ((t.clientX - cx) / (rect.width/2)) * 0.04;
+        pitch -= ((t.clientY - cy) / (rect.height/2)) * 0.04;
+        pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+    });
+
+    // Botões físicos virtuais
+    document.getElementById('btn-jump').addEventListener('touchstart', () => { if(player.canJump) player.velocityY = player.jumpForce; });
+    document.getElementById('btn-action').addEventListener('touchstart', performPlaceBlock);
+    document.getElementById('btn-attack').addEventListener('touchstart', performAttackAction);
+}
+
+// ======================================================
+// LÓGICA MECÂNICA DAS AÇÕES (Ataque e Bloco)
+// ======================================================
+function performPlaceBlock() {
     if(activeSlot === 2 && inventory.blocks > 0) {
-        let gridX = Math.floor(screenX / blockSize) * blockSize;
-        let gridY = Math.floor(screenY / blockSize) * blockSize;
+        // Calcula a posição exata à frente do jogador no espaço 3D
+        let bx = Math.round(camera.position.x + Math.sin(yaw) * -1.5);
+        let bz = Math.round(camera.position.z + Math.cos(yaw) * -1.5);
+        let by = Math.round(camera.position.y - 0.5);
 
-        let alreadyExists = mapBlocks.some(b => b.x === gridX && b.y === gridY);
-        if(!alreadyExists) {
-            mapBlocks.push({ x: gridX, y: gridY, type: 'bridge' });
+        if(!blockMap.has(`${bx},${by},${bz}`)) {
+            addBlockToWorld(bx, by, bz, greyMaterial, 'player_block');
             inventory.blocks--;
             updateHUD();
         }
     }
 }
 
-function checkPlatform(px, py) {
-    return mapBlocks.some(b => 
-        px >= b.x && px <= b.x + blockSize &&
-        py >= b.y && py <= b.y + blockSize
-    );
-}
+function performAttackAction() {
+    // Procura por blocos de Cama ou inimigos à frente
+    let bx = Math.round(camera.position.x + Math.sin(yaw) * -1.5);
+    let bz = Math.round(camera.position.z + Math.cos(yaw) * -1.5);
+    let by = Math.round(camera.position.y - 0.5);
 
-function triggerAttack() {
-    let distToBot = Math.hypot(player.x - bot.x, player.y - bot.y);
-    if(distToBot < 45) {
-        bot.hp -= player.dmg;
-        if(bot.hp <= 0) {
-            if(redBedAlive) {
-                bot.x = 520; bot.y = 150; bot.hp = 100;
-                showAlert("INIMIGO ABATIDO! ELE RESPAWNOU NA CAMA.");
-            } else {
-                bot.x = -9999;
-                showAlert("TIME VERMELHO ELIMINADO DEFINITIVAMENTE!");
-            }
-        }
-    }
-
-    if(redBedAlive) {
-        let distToBed = Math.hypot(player.x - (redBed.x + 20), player.y - (redBed.y + 12));
-        if(distToBed < 50) {
-            redBedAlive = false;
-            showAlert("SENSACIONAL! VOCÊ DESTRUIU A CAMA VERMELHA!");
+    let targetKey = `${bx},${by},${bz}`;
+    if(blockMap.has(targetKey)) {
+        let block = blockMap.get(targetKey);
+        if(block.type === 'red_bed') {
+            scene.remove(block.mesh);
+            blockMap.delete(targetKey);
+            showAlert("VOCÊ DESTRUIU A CAMA VERMELHA!");
         }
     }
 }
 
 function showAlert(msg) {
-    const el = document.getElementById('alert-box');
-    el.innerText = msg;
-    setTimeout(() => el.innerText = "", 3500);
+    const box = document.getElementById('alert-box');
+    box.innerText = msg;
+    setTimeout(() => box.innerText = "", 3000);
 }
 
-// Mecânica de Loop (Update Engine)
-function update() {
+// ======================================================
+// MOTOR DE LOOP E ATUALIZAÇÃO DA FÍSICA DE GRAVIDADE
+// ======================================================
+let lastIronTime = 0;
+
+function gameLoop() {
+    requestAnimationFrame(gameLoop);
+
     let now = Date.now();
 
-    if(joyMove.active) {
-        player.x += joyMove.dx * player.speed;
-        player.y += joyMove.dy * player.speed;
-        player.angle = Math.atan2(joyMove.dy, joyMove.dx);
-    }
+    // 1. Processar Rotação da Câmera
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
 
-    // Queda no Void (Espaço)
-    if(!checkPlatform(player.x, player.y)) {
-        player.hp -= 2.5;
-        if(player.hp <= 0) {
-            if(blueBedAlive) {
-                player.x = 100; player.y = 150; player.hp = 100;
-                showAlert("VOCÊ CAIU NO VAZIO!");
-            } else {
-                showAlert("FIM DE JOGO! SUA CAMA JÁ TINHA SIDO DESTRUÍDA.");
-                player.x = -2000;
-            }
+    // 2. Processar Vetores de Direção (Andar)
+    let moveX = 0;
+    let moveZ = 0;
+
+    if (!isMobile) {
+        // Lógica de Teclado PC
+        if (keys.w) { moveX -= Math.sin(yaw); moveZ -= Math.cos(yaw); }
+        if (keys.s) { moveX += Math.sin(yaw); moveZ += Math.cos(yaw); }
+        if (keys.a) { moveX -= Math.cos(yaw); moveZ += Math.sin(yaw); }
+        if (keys.d) { moveX += Math.cos(yaw); moveZ -= Math.sin(yaw); }
+        if (keys.Space && player.canJump) {
+            player.velocityY = player.jumpForce;
+            player.canJump = false;
         }
+    } else {
+        // Lógica de Joystick Celular
+        moveX = touchMoveData.dx * Math.cos(yaw) - touchMoveData.dy * Math.sin(yaw);
+        moveZ = touchMoveData.dx * Math.sin(yaw) + touchMoveData.dy * Math.cos(yaw);
     }
 
-    // Coleta Automática do Gerador de Ferro
-    if(now - ironGenerator.lastSpawn > 1000) {
-        if(Math.hypot(player.x - ironGenerator.x, player.y - ironGenerator.y) < 35) {
-            inventory.iron += 4;
+    // Aplicar movimento na coordenada do Player
+    camera.position.x += moveX * player.speed;
+    camera.position.z += moveZ * player.speed;
+
+    // 3. Aplicar Gravidade e Colisão de Piso Simples
+    player.velocityY -= player.gravity;
+    camera.position.y += player.velocityY;
+
+    let pBlockX = Math.round(camera.position.x);
+    let pBlockY = Math.round(camera.position.y - player.height);
+    let pBlockZ = Math.round(camera.position.z);
+
+    // Checa se tem bloco embaixo do pé
+    if(blockMap.has(`${pBlockX},${pBlockY},${pBlockZ}`)) {
+        camera.position.y = pBlockY + player.height;
+        player.velocityY = 0;
+        player.canJump = true;
+    }
+
+    // Queda no Vazio (Void)
+    if(camera.position.y < -15) {
+        camera.position.set(0, player.height, 3); // Respawn
+        player.velocityY = 0;
+        showAlert("VOCÊ CAIU NO VOID!");
+    }
+
+    // Gerador Automático de Ferro por Proximidade (Base central)
+    if(now - lastIronTime > 1500) {
+        if(Math.abs(camera.position.x) < 2 && Math.abs(camera.position.z) < 2) {
+            inventory.iron += 2;
             updateHUD();
         }
-        ironGenerator.lastSpawn = now;
+        lastIronTime = now;
     }
 
-    // Inteligência Artificial Avançada do Bot (Caçador)
-    if(bot.x > 0) {
-        let distToPlayer = Math.hypot(player.x - bot.x, player.y - bot.y);
-        if(distToPlayer < 200) {
-            bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x);
-            bot.x += Math.cos(bot.angle) * bot.speed;
-            bot.y += Math.sin(bot.angle) * bot.speed;
-
-            if(distToPlayer < 28 && now - bot.lastAttack > 1200) {
-                player.hp -= 18;
-                showAlert("ALERTA! VOCÊ FOI ATACADO PELO BOT!");
-                bot.lastAttack = now;
-            }
-        }
-    }
+    renderer.render(scene, camera);
 }
 
-// Pintura dos Elementos Visuais (Render Engine)
-function draw() {
-    ctx.fillStyle = "#4a83ec"; // Cor do fundo (Céu do Bloxd)
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Desenhar Blocos Construídos / Plataformas
-    for(let b of mapBlocks) {
-        ctx.fillStyle = b.type === 'island' ? '#8bc34a' : '#d1d8e0';
-        ctx.fillRect(b.x, b.y, blockSize, blockSize);
-        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-        ctx.strokeRect(b.x, b.y, blockSize, blockSize);
-    }
-
-    // Gerador de Recursos
-    ctx.fillStyle = "#57606f";
-    ctx.beginPath(); ctx.arc(ironGenerator.x, ironGenerator.y, 10, 0, Math.PI*2); ctx.fill();
-
-    // Camas Táticas
-    if(blueBedAlive) {
-        ctx.fillStyle = "#2f3542"; ctx.fillRect(blueBed.x, blueBed.y, blueBed.w, blueBed.h);
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(blueBed.x, blueBed.y, 10, blueBed.h);
-    }
-    if(redBedAlive) {
-        ctx.fillStyle = "#ff4757"; ctx.fillRect(redBed.x, redBed.y, redBed.w, redBed.h);
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(redBed.x + 30, redBed.y, 10, redBed.h);
-    }
-
-    // Desenhar Inimigo (Red)
-    if(bot.x > 0) {
-        ctx.fillStyle = "#ff4757";
-        ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "#000"; ctx.stroke();
-    }
-
-    // Desenhar Jogador (Blue)
-    if(player.x > 0) {
-        ctx.save();
-        ctx.translate(player.x, player.y);
-        ctx.rotate(player.angle);
-        ctx.fillStyle = "#1e90ff";
-        ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
-        
-        // Item na mão
-        ctx.fillStyle = activeSlot === 0 ? '#a1a1a1' : (activeSlot === 1 ? '#57606f' : '#ffffff');
-        ctx.fillRect(8, -2, 8, 4);
-        ctx.restore();
-
-        // Barra de Vida Dinâmica
-        ctx.fillStyle = '#ff4757'; ctx.fillRect(player.x - 15, player.y - 20, 30, 4);
-        ctx.fillStyle = '#2ed573'; ctx.fillRect(player.x - 15, player.y - 20, 30 * (player.hp/player.maxHp), 4);
-    }
-
-    // Desenhar Controle Analógico Virtual
-    if(joyMove.active) {
-        ctx.save(); ctx.globalAlpha = 0.35;
-        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(joyMove.x, joyMove.y, joyMove.rOut, 0, Math.PI*2); ctx.stroke();
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath(); ctx.arc(joyMove.cx, joyMove.cy, joyMove.rIn, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
-    }
-}
-
-function engineLoop() {
-    update();
-    draw();
-    requestAnimationFrame(engineLoop);
-}
-
-// Interface (UI Control)
+// ======================================================
+// EVENTOS DE INTERFACE DE USUÁRIO (HUD/SHOP)
+// ======================================================
 function updateHUD() {
     document.getElementById('hud-iron').innerText = inventory.iron;
     document.getElementById('hud-gold').innerText = inventory.gold;
@@ -307,55 +310,44 @@ function setSlot(id) {
 
 function toggleShop(open) {
     document.getElementById('shop-modal').style.display = open ? 'grid' : 'none';
+    if(open && !isMobile) document.exitPointerLock(); // Solta mouse no PC para comprar
     if(open) renderShopList();
 }
 
 function switchTab(tab) {
     currentTab = tab;
     document.getElementById('shop-title').innerText = `${tab.toUpperCase()} SHOP`;
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(b => b.className = b.innerText.toLowerCase() === tab ? 'tab-btn active' : 'tab-btn');
     renderShopList();
 }
 
 function renderShopList() {
     const container = document.getElementById('shop-items-container');
     container.innerHTML = '';
-    
     shopData[currentTab].forEach(item => {
         let card = document.createElement('div');
         card.className = 'item-card';
-        let wallet = inventory[item.costType];
-        let cantBuy = wallet < item.cost ? 'disabled' : '';
-
         card.innerHTML = `
-            <div>
-                <strong>${item.name}</strong>
-                <span style="font-size:11px; color:#a0aabf;">Preço: ${item.cost} ${item.costType}</span>
-            </div>
-            <button ${cantBuy} onclick="buyItem('${item.id}', ${item.cost}, '${item.costType}', ${item.amount || 0})">Comprar</button>
+            <div><strong>${item.name}</strong><span style="font-size:11px;color:#aaa;">Custo: ${item.cost} Ferro</span></div>
+            <button onclick="buyItem('${item.id}', ${item.cost}, ${item.amount || 0})">Comprar</button>
         `;
         container.appendChild(card);
     });
 }
 
-function buyItem(id, cost, type, amt) {
-    if(inventory[type] >= cost) {
-        inventory[type] -= cost;
+function buyItem(id, cost, amt) {
+    if(inventory.iron >= cost) {
+        inventory.iron -= cost;
         if(id === 'wool' || id === 'wood') {
             inventory.blocks += amt;
             setSlot(2);
         } else if(id === 'stone_sword') {
-            player.dmg = 24;
-            showAlert("VOCÊ COMPROU UMA ESPADA MELHOR!");
-        } else if(id === 'apple') {
-            player.hp = Math.min(player.maxHp, player.hp + 35);
+            player.dmg = 35;
         }
         updateHUD();
-        renderShopList();
+        toggleShop(false);
     }
 }
 
-// Inicialização
+// Iniciar Motor
 updateHUD();
-engineLoop();
+gameLoop();
