@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bloxd.io BedWars Remake Pro</title>
+    <title>Bloxd.io BedWars 3D Clone</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -13,12 +14,19 @@
         <div class="res-count" style="color:#ffd700">🟨 OURO: <span id="hud-gold">0</span></div>
     </div>
 
-    <button id="shop-trigger" class="side-btn" onclick="toggleShop(true)">LOJA [B]</button>
-    <button id="break-trigger" class="side-btn" onclick="triggerAttack()">ATACAR / QUEBRAR</button>
+    <div id="crosshair">+</div>
 
     <div id="alert-box"></div>
 
-    <canvas id="bwCanvas"></canvas>
+    <div id="mobile-controls">
+        <div id="joystick-move"></div>
+        <div id="joystick-look"></div>
+        <button id="btn-jump" class="action-btn">PULAR</button>
+        <button id="btn-action" class="action-btn">AÇÃO / BLOCO</button>
+        <button id="btn-attack" class="action-btn">ATACAR</button>
+    </div>
+
+    <button id="shop-trigger" onclick="toggleShop(true)">LOJA [B]</button>
 
     <div id="hotbar">
         <div class="slot active" onclick="setSlot(0)">⚔️<br><span>Espada</span></div>
