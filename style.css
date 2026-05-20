@@ -1,0 +1,215 @@
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+    touch-action: none; /* Crucial para o Sketchware não travar a tela */
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #5c94fc;
+    font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* HUD Superior */
+#resource-hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 10px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.res-count {
+    background: rgba(18, 22, 29, 0.85);
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #2d384e;
+}
+
+/* Botões Laterais */
+.side-btn {
+    position: absolute;
+    right: 15px;
+    border: 2px solid #fff;
+    color: white;
+    padding: 12px 18px;
+    font-weight: bold;
+    border-radius: 6px;
+    font-size: 13px;
+    z-index: 5;
+}
+#shop-trigger { top: 15px; background: #de9b35; box-shadow: 0 4px 0 #9c6a1e; }
+#break-trigger { top: 75px; background: #cc3333; box-shadow: 0 4px 0 #8c2020; }
+
+#alert-box {
+    position: absolute;
+    top: 130px;
+    width: 100%;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ff3333;
+    text-shadow: 0 2px 5px #000;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Hotbar Estilo Bloxd.io */
+#hotbar {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    background: rgba(28, 34, 46, 0.9);
+    padding: 6px;
+    border-radius: 6px;
+    border: 2px solid #3b4b6e;
+    gap: 6px;
+    z-index: 5;
+}
+
+.slot {
+    width: 48px;
+    height: 48px;
+    background: #253047;
+    border: 2px solid #3b4b6e;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.slot.active {
+    border-color: #de9b35;
+    background: #2d3b59;
+}
+
+.slot span {
+    font-size: 8px;
+    color: #a0aabf;
+    margin-top: 2px;
+}
+
+/* Menu de Compras Profissional */
+#shop-modal {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 14, 22, 0.96);
+    z-index: 100;
+    display: none;
+    grid-template-columns: 140px 1fr;
+}
+
+#shop-sidebar {
+    background: #141923;
+    border-right: 2px solid #232d3f;
+    display: flex;
+    flex-direction: column;
+    padding: 15px 0;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #a0aabf;
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.tab-btn.active {
+    color: #de9b35;
+    background: #1c2331;
+    border-left: 4px solid #de9b35;
+}
+
+.btn-exit {
+    margin-top: auto;
+    background: #cc3333;
+    color: white;
+    text-align: center;
+    border-radius: 4px;
+    margin-left: 10px;
+    margin-right: 10px;
+    padding: 10px;
+}
+
+#shop-content {
+    padding: 25px;
+    overflow-y: auto;
+}
+
+#shop-title {
+    color: white;
+    margin-bottom: 20px;
+    font-size: 24px;
+    border-bottom: 2px solid #232d3f;
+    padding-bottom: 10px;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.item-card {
+    background: #1c2331;
+    border: 1px solid #2d384e;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+}
+
+.item-card strong {
+    font-size: 14px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.item-card button {
+    background: #de9b35;
+    color: black;
+    border: none;
+    padding: 8px 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.item-card button:disabled {
+    background: #2d323d;
+    color: #5a657c;
+    cursor: not-allowed;
+}
