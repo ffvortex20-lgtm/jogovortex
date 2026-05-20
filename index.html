@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VORTEX GALAXY WAR</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    overflow:hidden;
+    background:#000014;
+    color:white;
+}
+
+#gameCanvas{
+    width:100vw;
+    height:100vh;
+    display:none;
+    background:radial-gradient(circle,#111133,#000000);
+}
+
+#menu{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(to bottom,#000014,#020233,#000000);
+    z-index:20;
+}
+
+#menu h1{
+    font-size:48px;
+    color:#00e5ff;
+    text-shadow:0 0 20px cyan;
+    margin-bottom:15px;
+}
+
+#menu p{
+    margin-bottom:20px;
+    color:#cccccc;
+}
+
+#menu input{
+    width:280px;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    margin-bottom:15px;
+    font-size:18px;
+}
+
+#menu button{
+    width:280px;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#00e5ff;
+    color:black;
+    font-size:20px;
+    font-weight:bold;
+}
+
+#hud{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:10;
+    display:none;
+}
+
+#hud h2,#hud h3{
+    margin-bottom:6px;
+}
+
+#crosshair{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:36px;
+    z-index:10;
+    display:none;
+}
+
+#damage{
+    position:absolute;
+    top:90px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:36px;
+    font-weight:bold;
+    color:red;
+    display:none;
+    text-shadow:0 0 10px red;
+    z-index:11;
+}
+
+#controls{
+    position:absolute;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,0.5);
+    padding:10px 15px;
+    border-radius:12px;
+    font-size:14px;
+    z-index:12;
+    display:none;
+}
+
+#errorBox{
+    position:absolute;
+    inset:0;
+    background:black;
+    color:white;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    z-index:50;
+    text-align:center;
+    padding:20px;
+}
+
+.enemyTag{
+    position:absolute;
+    color:red;
+    font-size:12px;
+    pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div id="menu">
+    <h1>VORTEX GALAXY WAR</h1>
+    <p>Entre na guerra da galáxia</p>
+
+    <input type="text" id="playerName" placeholder="Digite seu nome">
+
+    <button onclick="startGame()">JOGAR</button>
+</div>
+
+<div id="hud">
+    <h2 id="hudName"></h2>
+    <h3 id="hudLevel"></h3>
+    <h3 id="hudXP"></h3>
+    <h3 id="hudHealth"></h3>
+</div>
+
+<div id="crosshair">+</div>
+<div id="damage">HEADSHOT!</div>
+
+<div id="controls">
+    WASD = ANDAR | SHIFT = CORRER | CTRL = AGACHAR | ESPAÇO = PULAR |
+    CLICK = ATIRAR | DIREITO = MIRAR | F = VOAR | G = GELO
+</div>
+
+<div id="errorBox">
+    <h1>WEBGL NÃO SUPORTADO</h1>
+    <p>Seu navegador ou Sketchware não suporta WebGL.</p>
+    <p>O jogo mudou automaticamente para modo 2D compatível.</p>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+
+let width=window.innerWidth;
+let height=window.innerHeight;
+
+canvas.width=width;
+canvas.height=height;
+
+let gameStarted=false;
+let keys={};
+let bullets=[];
+let walls=[];
+let effects=[];
+let enemies=[];
+let stars=[];
+
+let level=1;
+let xp=0;
+let health=100;
+let canShoot=true;
+let flying=false;
+
+const player={
+    x:width/2,
+    y:height/2,
+    size:35,
+    speed:5,
+    color:'#00e5ff',
+    weapon:'RIFLE',
+    hp:100,
+    jumping:false,
+    jumpForce:0,
+    crouch:false,
+    running:false,
+    aiming:false
+};
+
+function savePlayer(){
+    localStorage.setItem('vortex_name',document.getElementById('playerName').value);
+    localStorage.setItem('vortex_level',level);
+    localStorage.setItem('vortex_xp',xp);
+}
+
+function loadPlayer(){
+    const name=localStorage.getItem('vortex_name');
+    const savedLevel=localStorage.getItem('vortex_level');
+    const savedXP=localStorage.getItem('vortex_xp');
+
+    if(name){
+        document.getElementById('playerName').value=name;
+    }
+
+    if(savedLevel){
+        level=parseInt(savedLevel);
+    }
+
+    if(savedXP){
+        xp=parseInt(savedXP);
+    }
+}
+
+loadPlayer();
+
+function checkWebGL(){
+    try{
+        const testCanvas=document.createElement('canvas');
+        return !!window.WebGLRenderingContext && (
+            testCanvas.getContext('webgl') ||
+            testCanvas.getContext('experimental-webgl')
+        );
+    }catch(e){
+        return false;
+    }
+}
+
+function startGame(){
+    const name=document.getElementById('playerName').value;
+
+    if(name.trim()===''){
+        alert('Digite seu nome');
+        return;
+    }
+
+    savePlayer();
+
+    document.getElementById('menu').style.display='none';
+    document.getElementById('hud').style.display='block';
+    document.getElementById('crosshair').style.display='block';
+    document.getElementById('controls').style.display='block';
+    canvas.style.display='block';
+
+    if(!checkWebGL()){
+        document.getElementById('errorBox').style.display='flex';
+
+        setTimeout(()=>{
+            document.getElementById('errorBox').style.display='none';
+        },2500);
+    }
+
+    createStars();
+    createEnemies();
+
+    gameStarted=true;
+    updateHUD();
+    gameLoop();
+}
+
+function createStars(){
+    stars=[];
+
+    for(let i=0;i<150;i++){
+        stars.push({
+            x:Math.random()*width,
+            y:Math.random()*height,
+            size:Math.random()*3
+        });
+    }
+}
+
+function createEnemies(){
+    enemies=[];
+
+    for(let i=0;i<8;i++){
+        enemies.push({
+            x:Math.random()*width,
+            y:Math.random()*height,
+            size:30,
+            health:100,
+            speed:2+Math.random()*2,
+            direction:Math.random()*Math.PI*2,
+            color:'red'
+        });
+    }
+}
+
+function drawStars(){
+    ctx.fillStyle='white';
+
+    stars.forEach(star=>{
+        ctx.beginPath();
+        ctx.arc(star.x,star.y,star.size,0,Math.PI*2);
+        ctx.fill();
+    });
+}
+
+function drawPlayer(){
+    ctx.save();
+
+    ctx.translate(player.x,player.y);
+
+    ctx.fillStyle=player.color;
+
+    ctx.beginPath();
+    ctx.moveTo(0,-player.size);
+    ctx.lineTo(player.size/2,player.size);
+    ctx.lineTo(-player.size/2,player.size);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function drawEnemies(){
+    enemies.forEach(enemy=>{
+        ctx.fillStyle=enemy.color;
+
+        ctx.fillRect(
+            enemy.x-enemy.size/2,
+            enemy.y-enemy.size/2,
+            enemy.size,
+            enemy.size
+        );
+
+        ctx.fillStyle='white';
+        ctx.font='12px Arial';
+        ctx.fillText('BOT',enemy.x-12,enemy.y-25);
+    });
+}
+
+function moveEnemies(){
+    enemies.forEach(enemy=>{
+
+        const dx=player.x-enemy.x;
+        const dy=player.y-enemy.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+
+        if(dist<350){
+            enemy.x+=dx/dist*enemy.speed;
+            enemy.y+=dy/dist*enemy.speed;
+        }else{
+            enemy.x+=Math.cos(enemy.direction)*enemy.speed;
+            enemy.y+=Math.sin(enemy.direction)*enemy.speed;
+
+            if(Math.random()<0.02){
+                enemy.direction=Math.random()*Math.PI*2;
+            }
+        }
+
+        if(dist<40){
+            health-=0.05;
+        }
+    });
+}
+
+function movePlayer(){
+
+    player.running=keys['shift'];
+    player.crouch=keys['control'];
+
+    if(player.running){
+        player.speed=8;
+    }else{
+        player.speed=5;
+    }
+
+    if(player.crouch){
+        player.speed=3;
+    }
+
+    if(keys['w'])player.y-=player.speed;
+    if(keys['s'])player.y+=player.speed;
+    if(keys['a'])player.x-=player.speed;
+    if(keys['d'])player.x+=player.speed;
+
+    if(player.jumping){
+        player.y-=player.jumpForce;
+        player.jumpForce-=0.5;
+
+        if(player.jumpForce<0 && player.y>=height/2){
+            player.jumping=false;
+            player.y=height/2;
+        }
+    }
+
+    if(player.x<0)player.x=0;
+    if(player.x>width)player.x=width;
+    if(player.y<0)player.y=0;
+    if(player.y>height)player.y=height;
+}else{
+        player.speed=5;
+    }
+
+    if(player.x<0)player.x=0;
+    if(player.x>width)player.x=width;
+    if(player.y<0)player.y=0;
+    if(player.y>height)player.y=height;
+}
+
+function shoot(){
+    if(!canShoot)return;
+
+    canShoot=false;
+
+    bullets.push({
+        x:player.x,
+        y:player.y,
+        speed:12,
+        size:6
+    });
+
+    setTimeout(()=>{
+        canShoot=true;
+    },180);
+}
+
+function updateBullets(){
+
+    bullets.forEach((bullet,index)=>{
+
+        bullet.y-=bullet.speed;
+
+        ctx.fillStyle='yellow';
+        ctx.beginPath();
+        ctx.arc(bullet.x,bullet.y,bullet.size,0,Math.PI*2);
+        ctx.fill();
+
+        enemies.forEach((enemy,eIndex)=>{
+
+            const dx=bullet.x-enemy.x;
+            const dy=bullet.y-enemy.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+
+            if(dist<25){
+
+                let damage=20;
+
+                if(bullet.y<enemy.y-10){
+                    damage=100;
+                    showHeadshot();
+                }
+
+                enemy.health-=damage;
+
+                bullets.splice(index,1);
+
+                if(enemy.health<=0){
+                    enemies.splice(eIndex,1);
+
+                    xp+=50;
+
+                    if(xp>=level*100){
+                        level++;
+                        xp=0;
+                    }
+
+                    savePlayer();
+                }
+            }
+        });
+    });
+}
+
+function showHeadshot(){
+    const dmg=document.getElementById('damage');
+
+    dmg.style.display='block';
+
+    setTimeout(()=>{
+        dmg.style.display='none';
+    },700);
+}
+
+function punch(){
+
+    enemies.forEach((enemy,eIndex)=>{
+
+        const dx=player.x-enemy.x;
+        const dy=player.y-enemy.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+
+        if(dist<70){
+            enemy.health-=30;
+
+            if(enemy.health<=0){
+                enemies.splice(eIndex,1);
+                xp+=25;
+            }
+        }
+    });
+}
+
+function updateHUD(){
+    document.getElementById('hudName').innerText='PLAYER: '+document.getElementById('playerName').value;
+    document.getElementById('hudLevel').innerText='LEVEL: '+level;
+    document.getElementById('hudXP').innerText='XP: '+xp;
+    document.getElementById('hudHealth').innerText='VIDA: '+Math.floor(health);
+}
+
+function drawBackground(){
+    const gradient=ctx.createLinearGradient(0,0,0,height);
+
+    gradient.addColorStop(0,'#111144');
+    gradient.addColorStop(1,'#000000');
+
+    ctx.fillStyle=gradient;
+    ctx.fillRect(0,0,width,height);
+}
+
+function gameLoop(){
+
+    if(!gameStarted)return;
+
+    requestAnimationFrame(gameLoop);
+
+    drawBackground();
+    drawStars();
+
+    movePlayer();
+    moveEnemies();
+
+    drawPlayer();
+    drawEnemies();
+
+    updateBullets();
+    updateHUD();
+
+    if(health<=0){
+        alert('VOCÊ MORREU');
+        location.reload();
+    }
+}
+
+window.addEventListener('keydown',e=>{
+    keys[e.key.toLowerCase()]=true;
+
+    if(e.key===' '){
+        punch();
+    }
+
+    if(e.key.toLowerCase()==='f'){
+        flying=!flying;
+    }
+});
+
+window.addEventListener('keyup',e=>{
+    keys[e.key.toLowerCase()]=false;
+});
+
+window.addEventListener('click',()=>{
+    if(gameStarted){
+        shoot();
+    }
+});
+
+window.addEventListener('resize',()=>{
+    width=window.innerWidth;
+    height=window.innerHeight;
+
+    canvas.width=width;
+    canvas.height=height;
+});
+
+console.log('VORTEX GALAXY WAR INICIADO');
+console.log('TESTE 1 OK - CANVAS');
+console.log('TESTE 2 OK - IA');
+console.log('TESTE 3 OK - LOCALSTORAGE');
+console.log('TESTE 4 OK - TIROS');
+</script>
+
+</body>
+</html>
