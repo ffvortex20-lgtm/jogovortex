@@ -4,17 +4,18 @@
     -webkit-user-select: none;
     margin: 0;
     padding: 0;
-    touch-action: none; /* Crucial para o Sketchware não travar a tela */
+    touch-action: none;
 }
 
 body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #5c94fc;
-    font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+    background-color: #000;
+    font-family: 'Segoe UI', sans-serif;
 }
 
+/* Elemento de Render do Três.js */
 canvas {
     display: block;
     width: 100%;
@@ -24,192 +25,113 @@ canvas {
 /* HUD Superior */
 #resource-hud {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    display: flex;
-    gap: 10px;
+    top: 12px; left: 12px;
+    display: flex; gap: 10px;
+    z-index: 10;
     pointer-events: none;
-    z-index: 5;
 }
-
 .res-count {
-    background: rgba(18, 22, 29, 0.85);
-    border-radius: 6px;
-    padding: 8px 14px;
+    background: rgba(20, 26, 36, 0.85);
+    border: 1px solid #3b4b6e;
+    border-radius: 4px;
+    padding: 6px 12px;
     color: #fff;
     font-weight: bold;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid #2d384e;
 }
 
-/* Botões Laterais */
-.side-btn {
+/* Mira Central */
+#crosshair {
     position: absolute;
-    right: 15px;
-    border: 2px solid #fff;
-    color: white;
-    padding: 12px 18px;
-    font-weight: bold;
-    border-radius: 6px;
-    font-size: 13px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 24px;
+    font-weight: 300;
     z-index: 5;
+    pointer-events: none;
 }
-#shop-trigger { top: 15px; background: #de9b35; box-shadow: 0 4px 0 #9c6a1e; }
-#break-trigger { top: 75px; background: #cc3333; box-shadow: 0 4px 0 #8c2020; }
 
 #alert-box {
     position: absolute;
-    top: 130px;
-    width: 100%;
+    top: 20%; width: 100%;
     text-align: center;
-    font-size: 22px;
-    font-weight: bold;
-    color: #ff3333;
-    text-shadow: 0 2px 5px #000;
-    pointer-events: none;
-    z-index: 5;
+    font-size: 22px; font-weight: bold; color: #ff3333;
+    text-shadow: 0 2px 4px #000;
+    z-index: 10; pointer-events: none;
 }
 
-/* Hotbar Estilo Bloxd.io */
+/* Loja Trigger */
+#shop-trigger {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: #de9b35; border: 2px solid #fff; color: #000;
+    padding: 8px 16px; font-weight: bold; border-radius: 4px;
+    z-index: 10;
+}
+
+/* Hotbar */
 #hotbar {
     position: absolute;
-    bottom: 15px;
-    left: 50%;
+    bottom: 15px; left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    background: rgba(28, 34, 46, 0.9);
-    padding: 6px;
-    border-radius: 6px;
-    border: 2px solid #3b4b6e;
-    gap: 6px;
-    z-index: 5;
+    display: flex; gap: 6px;
+    background: rgba(15, 20, 30, 0.9);
+    padding: 6px; border-radius: 6px;
+    border: 2px solid #2d384e; z-index: 10;
 }
-
 .slot {
-    width: 48px;
-    height: 48px;
-    background: #253047;
-    border: 2px solid #3b4b6e;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
+    width: 46px; height: 46px;
+    background: #232d3f; border: 2px solid #3b4b6e;
+    border-radius: 4px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #fff;
+    font-size: 11px; font-weight: bold;
+}
+.slot.active { border-color: #de9b35; background: #2d3b59; }
+.slot span { font-size: 8px; color: #a0aabf; }
+
+/* CONTROLES MOBILE (Ocultados por padrão, ativos via JS no Android) */
+#mobile-controls {
+    display: none; /* Ativado via JavaScript se for detectado Mobile */
+}
+.action-btn {
+    position: absolute;
+    background: rgba(40, 50, 70, 0.75);
+    border: 2px solid #fff; color: white;
+    font-weight: bold; border-radius: 50%;
+    z-index: 10; font-size: 11px;
+}
+#btn-jump { bottom: 30px; right: 30px; width: 60px; height: 60px; }
+#btn-action { bottom: 105px; right: 30px; width: 60px; height: 60px; background: #2ed573; }
+#btn-attack { bottom: 30px; right: 105px; width: 60px; height: 60px; background: #ff4757; }
+
+/* Configuração dos Joysticks Virtuais de Tela */
+#joystick-move {
+    position: absolute; bottom: 30px; left: 30px;
+    width: 100px; height: 100px; background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; z-index: 10;
+}
+#joystick-look {
+    position: absolute; bottom: 150px; left: 30px;
+    width: 100px; height: 100px; background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; z-index: 10;
 }
 
-.slot.active {
-    border-color: #de9b35;
-    background: #2d3b59;
-}
-
-.slot span {
-    font-size: 8px;
-    color: #a0aabf;
-    margin-top: 2px;
-}
-
-/* Menu de Compras Profissional */
+/* Estrutura da Loja */
 #shop-modal {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(10, 14, 22, 0.96);
-    z-index: 100;
-    display: none;
+    z-index: 100; display: none;
     grid-template-columns: 140px 1fr;
 }
-
-#shop-sidebar {
-    background: #141923;
-    border-right: 2px solid #232d3f;
-    display: flex;
-    flex-direction: column;
-    padding: 15px 0;
-}
-
-.tab-btn {
-    background: transparent;
-    border: none;
-    color: #a0aabf;
-    padding: 16px 20px;
-    text-align: left;
-    font-weight: bold;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.tab-btn.active {
-    color: #de9b35;
-    background: #1c2331;
-    border-left: 4px solid #de9b35;
-}
-
-.btn-exit {
-    margin-top: auto;
-    background: #cc3333;
-    color: white;
-    text-align: center;
-    border-radius: 4px;
-    margin-left: 10px;
-    margin-right: 10px;
-    padding: 10px;
-}
-
-#shop-content {
-    padding: 25px;
-    overflow-y: auto;
-}
-
-#shop-title {
-    color: white;
-    margin-bottom: 20px;
-    font-size: 24px;
-    border-bottom: 2px solid #232d3f;
-    padding-bottom: 10px;
-}
-
-.shop-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 15px;
-}
-
-.item-card {
-    background: #1c2331;
-    border: 1px solid #2d384e;
-    border-radius: 6px;
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #fff;
-}
-
-.item-card strong {
-    font-size: 14px;
-    display: block;
-    margin-bottom: 4px;
-}
-
-.item-card button {
-    background: #de9b35;
-    color: black;
-    border: none;
-    padding: 8px 12px;
-    font-weight: bold;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.item-card button:disabled {
-    background: #2d323d;
-    color: #5a657c;
-    cursor: not-allowed;
-}
+#shop-sidebar { background: #141923; border-right: 2px solid #232d3f; display: flex; flex-direction: column; padding: 15px 0; }
+.tab-btn { background: transparent; border: none; color: #a0aabf; padding: 16px 20px; text-align: left; font-weight: bold; font-size: 14px; }
+.tab-btn.active { color: #de9b35; background: #1c2331; border-left: 4px solid #de9b35; }
+.btn-exit { margin-top: auto; background: #cc3333; color: white; text-align: center; border-radius: 4px; margin: auto 10px 0 10px; padding: 10px; }
+#shop-content { padding: 25px; overflow-y: auto; }
+#shop-title { color: white; margin-bottom: 20px; font-size: 24px; border-bottom: 2px solid #232d3f; padding-bottom: 10px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+.item-card { background: #1c2331; border: 1px solid #2d384e; border-radius: 6px; padding: 12px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
+.item-card button { background: #de9b35; color: black; border: none; padding: 8px 12px; font-weight: bold; border-radius: 4px; font-size: 12px; }
+.item-card button:disabled { background: #2d323d; color: #5a657c; }
