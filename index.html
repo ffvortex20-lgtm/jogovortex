@@ -1,598 +1,663 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VORTEX GALAXY WAR</title>
-
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial,sans-serif;
-}
-
-body{
-    overflow:hidden;
-    background:#000014;
-    color:white;
-}
-
-#gameCanvas{
-    width:100vw;
-    height:100vh;
-    display:none;
-    background:radial-gradient(circle,#111133,#000000);
-}
-
-#menu{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    background:linear-gradient(to bottom,#000014,#020233,#000000);
-    z-index:20;
-}
-
-#menu h1{
-    font-size:48px;
-    color:#00e5ff;
-    text-shadow:0 0 20px cyan;
-    margin-bottom:15px;
-}
-
-#menu p{
-    margin-bottom:20px;
-    color:#cccccc;
-}
-
-#menu input{
-    width:280px;
-    padding:14px;
-    border:none;
-    border-radius:12px;
-    margin-bottom:15px;
-    font-size:18px;
-}
-
-#menu button{
-    width:280px;
-    padding:14px;
-    border:none;
-    border-radius:12px;
-    background:#00e5ff;
-    color:black;
-    font-size:20px;
-    font-weight:bold;
-}
-
-#hud{
-    position:absolute;
-    top:10px;
-    left:10px;
-    z-index:10;
-    display:none;
-}
-
-#hud h2,#hud h3{
-    margin-bottom:6px;
-}
-
-#crosshair{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    font-size:36px;
-    z-index:10;
-    display:none;
-}
-
-#damage{
-    position:absolute;
-    top:90px;
-    left:50%;
-    transform:translateX(-50%);
-    font-size:36px;
-    font-weight:bold;
-    color:red;
-    display:none;
-    text-shadow:0 0 10px red;
-    z-index:11;
-}
-
-#controls{
-    position:absolute;
-    bottom:15px;
-    left:50%;
-    transform:translateX(-50%);
-    background:rgba(0,0,0,0.5);
-    padding:10px 15px;
-    border-radius:12px;
-    font-size:14px;
-    z-index:12;
-    display:none;
-}
-
-#errorBox{
-    position:absolute;
-    inset:0;
-    background:black;
-    color:white;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    z-index:50;
-    text-align:center;
-    padding:20px;
-}
-
-.enemyTag{
-    position:absolute;
-    color:red;
-    font-size:12px;
-    pointer-events:none;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vortex Strike - Premium Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0c;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #15151e 0%, #07070a 100%);
+        }
+        /* UI Superior - Status */
+        #ui-container {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .ui-box {
+            background: rgba(15, 15, 25, 0.75);
+            border: 1px solid #ff0055;
+            box-shadow: 0 0 10px rgba(25, 0, 85, 0.5);
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        .ui-box span {
+            color: #00ffcc;
+        }
+        /* Controles Virtuais Touch */
+        .joystick-container {
+            position: absolute;
+            bottom: 30px;
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+        }
+        #move-joystick-container { left: 30px; }
+        #aim-joystick-container { right: 30px; border-color: rgba(255, 0, 85, 0.3); }
+        
+        .joystick-stick {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #2b2b36, #1c1c24);
+            border: 2px solid #00ffcc;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+            transition: background 0.2s;
+        }
+        #aim-joystick-container .joystick-stick {
+            border-color: #ff0055;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+        }
+        /* Tela de Game Over e Loja */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(7, 7, 10, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal h1 {
+            font-size: 36px;
+            color: #ff0055;
+            text-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: linear-gradient(90deg, #ff0055, #7a00ff);
+            border: none;
+            padding: 12px 30px;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+        }
+        /* Botão Loja */
+        #shop-trigger {
+            position: absolute;
+            top: 70px;
+            right: 12px;
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid #00ffcc;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+            width: 90%;
+            max-width: 400px;
+        }
+        .shop-item {
+            background: #151522;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .shop-item.owned { border-color: #00ffcc; }
+        .shop-item p { font-size: 12px; margin: 4px 0 8px; color: #aaa; }
+        .shop-item button {
+            background: #222; border: 1px solid #55; color: white;
+            padding: 4px 10px; border-radius: 4px; font-size: 12px; width: 100%;
+        }
+        .shop-item button.buyable { background: #00ffcc; color: black; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<div id="menu">
-    <h1>VORTEX GALAXY WAR</h1>
-    <p>Entre na guerra da galáxia</p>
+    <canvas id="gameCanvas"></canvas>
 
-    <input type="text" id="playerName" placeholder="Digite seu nome">
+    <div id="ui-container">
+        <div class="ui-box">HP: <span id="hp-display">100</span></div>
+        <div class="ui-box">PONTOS: <span id="score-display">0</span></div>
+        <div class="ui-box">$ <span id="cash-display">0</span></div>
+    </div>
 
-    <button onclick="startGame()">JOGAR</button>
-</div>
+    <button id="shop-trigger" onclick="toggleShop(true)">LOJA DE ARMAS</button>
 
-<div id="hud">
-    <h2 id="hudName"></h2>
-    <h3 id="hudLevel"></h3>
-    <h3 id="hudXP"></h3>
-    <h3 id="hudHealth"></h3>
-</div>
+    <!-- Joystick de Movimento (Esquerdo) -->
+    <div id="move-joystick-container" class="joystick-container">
+        <div id="move-stick" class="joystick-stick"></div>
+    </div>
 
-<div id="crosshair">+</div>
-<div id="damage">HEADSHOT!</div>
+    <!-- Joystick de Mira/Tiro (Direito) -->
+    <div id="aim-joystick-container" class="joystick-container">
+        <div id="aim-stick" class="joystick-stick"></div>
+    </div>
 
-<div id="controls">
-    WASD = ANDAR | SHIFT = CORRER | CTRL = AGACHAR | ESPAÇO = PULAR |
-    CLICK = ATIRAR | DIREITO = MIRAR | F = VOAR | G = GELO
-</div>
+    <!-- Modal Game Over -->
+    <div id="gameover-modal" class="modal">
+        <h1 id="game-title">GAME OVER</h1>
+        <p style="margin-bottom: 20px; color: #888;">Seu recorde foi de <span id="final-score" style="color:#00ffcc">0</span> pontos.</p>
+        <button class="btn" onclick="restartGame()">JOGAR NOVAMENTE</button>
+    </div>
 
-<div id="errorBox">
-    <h1>WEBGL NÃO SUPORTADO</h1>
-    <p>Seu navegador ou Sketchware não suporta WebGL.</p>
-    <p>O jogo mudou automaticamente para modo 2D compatível.</p>
-</div>
+    <!-- Modal Loja -->
+    <div id="shop-modal" class="modal">
+        <h1>LOJA VORTEX</h1>
+        <div class="shop-grid" id="shop-grid"></div>
+        <button class="btn" style="background:#333; box-shadow:none;" onclick="toggleShop(false)">VOLTAR AO JOGO</button>
+    </div>
 
-<canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-<script>
-const canvas=document.getElementById('gameCanvas');
-const ctx=canvas.getContext('2d');
+        // Ajustar tamanho do Canvas dinamicamente
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-let width=window.innerWidth;
-let height=window.innerHeight;
+        // Configurações Globais do Jogo
+        let gameActive = true;
+        let score = 0;
+        let cash = 0;
+        let lastBotSpawn = 0;
+        let botSpawnInterval = 2500; // 2.5 segundos
 
-canvas.width=width;
-canvas.height=height;
+        // Configuração das Armas disponíveis
+        const weapons = {
+            pistol: { name: "Pistola Neon", damage: 25, speed: 10, fireRate: 400, color: "#00ffcc", price: 0, owned: true },
+            smg: { name: "Submetralhadora", damage: 20, speed: 12, fireRate: 150, color: "#ffff00", price: 150, owned: false },
+            shotgun: { name: "Espingarda Impacto", damage: 15, speed: 8, fireRate: 800, color: "#ff00ff", price: 300, owned: false, spread: true },
+            rifle: { name: "Rifle Laser", damage: 55, speed: 18, fireRate: 350, color: "#ff0055", price: 600, owned: false }
+        };
 
-let gameStarted=false;
-let keys={};
-let bullets=[];
-let walls=[];
-let effects=[];
-let enemies=[];
-let stars=[];
+        // Estado do Jogador
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 18,
+            color: '#00ffcc',
+            hp: 100,
+            maxHp: 100,
+            speed: 3.5,
+            angle: 0,
+            currentWeapon: 'pistol',
+            lastShot: 0,
+            dashCooldown: 0,
+            pulseAnim: 0
+        };
 
-let level=1;
-let xp=0;
-let health=100;
-let canShoot=true;
-let flying=false;
+        // Listas de entidades
+        let entities = {
+            bots: [],
+            bullets: [],
+            particles: []
+        };
 
-const player={
-    x:width/2,
-    y:height/2,
-    size:35,
-    speed:5,
-    color:'#00e5ff',
-    weapon:'RIFLE',
-    hp:100,
-    jumping:false,
-    jumpForce:0,
-    crouch:false,
-    running:false,
-    aiming:false
-};
+        // Dados dos Joysticks
+        const joysticks = {
+            move: { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0, dirX: 0, dirY: 0 },
+            aim: { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0, dirX: 0, dirY: 0 }
+        };
 
-function savePlayer(){
-    localStorage.setItem('vortex_name',document.getElementById('playerName').value);
-    localStorage.setItem('vortex_level',level);
-    localStorage.setItem('vortex_xp',xp);
-}
+        // Setup dos inputs touch para os Joysticks
+        setupJoystick('move-joystick-container', 'move-stick', joysticks.move);
+        setupJoystick('aim-joystick-container', 'aim-stick', joysticks.aim);
 
-function loadPlayer(){
-    const name=localStorage.getItem('vortex_name');
-    const savedLevel=localStorage.getItem('vortex_level');
-    const savedXP=localStorage.getItem('vortex_xp');
+        function setupJoystick(containerId, stickId, joyState) {
+            const container = document.getElementById(containerId);
+            const stick = document.getElementById(stickId);
+            const maxDistance = 45;
 
-    if(name){
-        document.getElementById('playerName').value=name;
-    }
+            container.addEventListener('touchstart', (e) => {
+                joyState.active = true;
+                const touch = e.touches[0];
+                const rect = container.getBoundingClientRect();
+                joyState.startX = rect.left + rect.width / 2;
+                joyState.startY = rect.top + rect.height / 2;
+            }, {passive: true});
 
-    if(savedLevel){
-        level=parseInt(savedLevel);
-    }
+            window.addEventListener('touchmove', (e) => {
+                if (!joyState.active) return;
+                
+                let currentTouch = null;
+                for(let t of e.touches) {
+                    if(containerId === 'move-joystick-container' && t.clientX < window.innerWidth/2) currentTouch = t;
+                    if(containerId === 'aim-joystick-container' && t.clientX >= window.innerWidth/2) currentTouch = t;
+                }
+                if(!currentTouch) currentTouch = e.touches[0];
 
-    if(savedXP){
-        xp=parseInt(savedXP);
-    }
-}
+                let dx = currentTouch.clientX - joyState.startX;
+                let dy = currentTouch.clientY - joyState.startY;
+                let distance = Math.sqrt(dx*dx + dy*dy);
 
-loadPlayer();
+                if (distance > maxDistance) {
+                    dx = (dx / distance) * maxDistance;
+                    dy = (dy / distance) * maxDistance;
+                    distance = maxDistance;
+                }
 
-function checkWebGL(){
-    try{
-        const testCanvas=document.createElement('canvas');
-        return !!window.WebGLRenderingContext && (
-            testCanvas.getContext('webgl') ||
-            testCanvas.getContext('experimental-webgl')
-        );
-    }catch(e){
-        return false;
-    }
-}
+                joyState.moveX = dx;
+                joyState.moveY = dy;
+                joyState.dirX = dx / maxDistance;
+                joyState.dirY = dy / maxDistance;
 
-function startGame(){
-    const name=document.getElementById('playerName').value;
+                stick.style.transform = `translate(${dx}px, ${dy}px)`;
+            }, {passive: true});
 
-    if(name.trim()===''){
-        alert('Digite seu nome');
-        return;
-    }
+            const endHandler = () => {
+                joyState.active = false;
+                joyState.moveX = 0; joyState.moveY = 0;
+                joyState.dirX = 0; joyState.dirY = 0;
+                stick.style.transform = 'translate(0px, 0px)';
+            };
 
-    savePlayer();
+            container.addEventListener('touchend', endHandler);
+            container.addEventListener('touchcancel', endHandler);
+        }
 
-    document.getElementById('menu').style.display='none';
-    document.getElementById('hud').style.display='block';
-    document.getElementById('crosshair').style.display='block';
-    document.getElementById('controls').style.display='block';
-    canvas.style.display='block';
-
-    if(!checkWebGL()){
-        document.getElementById('errorBox').style.display='flex';
-
-        setTimeout(()=>{
-            document.getElementById('errorBox').style.display='none';
-        },2500);
-    }
-
-    createStars();
-    createEnemies();
-
-    gameStarted=true;
-    updateHUD();
-    gameLoop();
-}
-
-function createStars(){
-    stars=[];
-
-    for(let i=0;i<150;i++){
-        stars.push({
-            x:Math.random()*width,
-            y:Math.random()*height,
-            size:Math.random()*3
-        });
-    }
-}
-
-function createEnemies(){
-    enemies=[];
-
-    for(let i=0;i<8;i++){
-        enemies.push({
-            x:Math.random()*width,
-            y:Math.random()*height,
-            size:30,
-            health:100,
-            speed:2+Math.random()*2,
-            direction:Math.random()*Math.PI*2,
-            color:'red'
-        });
-    }
-}
-
-function drawStars(){
-    ctx.fillStyle='white';
-
-    stars.forEach(star=>{
-        ctx.beginPath();
-        ctx.arc(star.x,star.y,star.size,0,Math.PI*2);
-        ctx.fill();
-    });
-}
-
-function drawPlayer(){
-    ctx.save();
-
-    ctx.translate(player.x,player.y);
-
-    ctx.fillStyle=player.color;
-
-    ctx.beginPath();
-    ctx.moveTo(0,-player.size);
-    ctx.lineTo(player.size/2,player.size);
-    ctx.lineTo(-player.size/2,player.size);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-}
-
-function drawEnemies(){
-    enemies.forEach(enemy=>{
-        ctx.fillStyle=enemy.color;
-
-        ctx.fillRect(
-            enemy.x-enemy.size/2,
-            enemy.y-enemy.size/2,
-            enemy.size,
-            enemy.size
-        );
-
-        ctx.fillStyle='white';
-        ctx.font='12px Arial';
-        ctx.fillText('BOT',enemy.x-12,enemy.y-25);
-    });
-}
-
-function moveEnemies(){
-    enemies.forEach(enemy=>{
-
-        const dx=player.x-enemy.x;
-        const dy=player.y-enemy.y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-
-        if(dist<350){
-            enemy.x+=dx/dist*enemy.speed;
-            enemy.y+=dy/dist*enemy.speed;
-        }else{
-            enemy.x+=Math.cos(enemy.direction)*enemy.speed;
-            enemy.y+=Math.sin(enemy.direction)*enemy.speed;
-
-            if(Math.random()<0.02){
-                enemy.direction=Math.random()*Math.PI*2;
+        // Criar Partículas (Animação de Sangue/Faíscas)
+        function spawnParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                entities.particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    radius: Math.random() * 3 + 1,
+                    color: color,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.02
+                });
             }
         }
 
-        if(dist<40){
-            health-=0.05;
+        // Atirar
+        function shoot(shooter, angle, isBot = false) {
+            const now = Date.now();
+            const wpn = isBot ? { speed: 6, damage: 10, color: '#ff0055' } : weapons[player.currentWeapon];
+            
+            if (!isBot && now - player.lastShot < wpn.fireRate) return;
+            if (!isBot) player.lastShot = now;
+
+            const spawnBullet = (ang) => {
+                entities.bullets.push({
+                    x: shooter.x + Math.cos(angle) * shooter.radius,
+                    y: shooter.y + Math.sin(angle) * shooter.radius,
+                    vx: Math.cos(ang) * wpn.speed,
+                    vy: Math.sin(ang) * wpn.speed,
+                    radius: isBot ? 4 : 5,
+                    color: wpn.color,
+                    damage: wpn.damage,
+                    isBot: isBot
+                });
+            };
+
+            if (!isBot && wpn.spread) {
+                // Tiro espalhado estilo Shotgun
+                spawnBullet(angle - 0.15);
+                spawnBullet(angle);
+                spawnBullet(angle + 0.15);
+            } else {
+                spawnBullet(angle);
+            }
         }
-    });
-}
 
-function movePlayer(){
+        // Injetar Inteligência Artificial nos Bots
+        function spawnBot() {
+            if (entities.bots.length >= 12) return; // Limite de bots ativos
 
-    player.running=keys['shift'];
-    player.crouch=keys['control'];
+            // Spawn fora da tela visível para não dar instakill
+            let x, y;
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -30 : canvas.width + 30;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? -30 : canvas.height + 30;
+            }
 
-    if(player.running){
-        player.speed=8;
-    }else{
-        player.speed=5;
-    }
+            // Tipos de bots aleatórios
+            const types = [
+                { color: '#ff3333', speed: 1.8, hp: 40, maxHp: 40, size: 16, reward: 20 }, // Normal
+                { color: '#ffaa00', speed: 2.8, hp: 20, maxHp: 20, size: 14, reward: 30 }, // Veloz
+                { color: '#9900ff', speed: 1.2, hp: 90, maxHp: 90, size: 22, reward: 50 }  // Tanque
+            ];
+            const profile = types[Math.floor(Math.random() * types.length)];
 
-    if(player.crouch){
-        player.speed=3;
-    }
-
-    if(keys['w'])player.y-=player.speed;
-    if(keys['s'])player.y+=player.speed;
-    if(keys['a'])player.x-=player.speed;
-    if(keys['d'])player.x+=player.speed;
-
-    if(player.jumping){
-        player.y-=player.jumpForce;
-        player.jumpForce-=0.5;
-
-        if(player.jumpForce<0 && player.y>=height/2){
-            player.jumping=false;
-            player.y=height/2;
+            entities.bots.push({
+                x: x, y: y,
+                radius: profile.size,
+                color: profile.color,
+                speed: profile.speed,
+                hp: profile.hp,
+                maxHp: profile.maxHp,
+                reward: profile.reward,
+                lastShot: 0,
+                shootInterval: 1500 + Math.random() * 1000
+            });
         }
-    }
 
-    if(player.x<0)player.x=0;
-    if(player.x>width)player.x=width;
-    if(player.y<0)player.y=0;
-    if(player.y>height)player.y=height;
-}else{
-        player.speed=5;
-    }
+        // Renderizar Elementos Gráficos e Atualizar Lógica
+        function update() {
+            if (!gameActive) return;
 
-    if(player.x<0)player.x=0;
-    if(player.x>width)player.x=width;
-    if(player.y<0)player.y=0;
-    if(player.y>height)player.y=height;
-}
+            // 1. Movimentação do Jogador
+            if (joysticks.move.active) {
+                player.x += joysticks.move.dirX * player.speed;
+                player.y += joysticks.move.dirY * player.speed;
+                
+                // Limites da tela
+                player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+                player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+                
+                if (!joysticks.aim.active) {
+                    player.angle = Math.atan2(joysticks.move.dirY, joysticks.move.dirX);
+                }
+            }
 
-function shoot(){
-    if(!canShoot)return;
+            // 2. Mira e Ataque do Jogador
+            if (joysticks.aim.active) {
+                player.angle = Math.atan2(joysticks.aim.dirY, joysticks.aim.dirX);
+                shoot(player, player.angle, false);
+            }
 
-    canShoot=false;
+            // Animação sutil de pulsação no player
+            player.pulseAnim += 0.05;
 
-    bullets.push({
-        x:player.x,
-        y:player.y,
-        speed:12,
-        size:6
-    });
+            // 3. Processar Balas
+            for (let i = entities.bullets.length - 1; i >= 0; i--) {
+                let b = entities.bullets[i];
+                b.x += b.vx;
+                b.y += b.vy;
 
-    setTimeout(()=>{
-        canShoot=true;
-    },180);
-}
-
-function updateBullets(){
-
-    bullets.forEach((bullet,index)=>{
-
-        bullet.y-=bullet.speed;
-
-        ctx.fillStyle='yellow';
-        ctx.beginPath();
-        ctx.arc(bullet.x,bullet.y,bullet.size,0,Math.PI*2);
-        ctx.fill();
-
-        enemies.forEach((enemy,eIndex)=>{
-
-            const dx=bullet.x-enemy.x;
-            const dy=bullet.y-enemy.y;
-            const dist=Math.sqrt(dx*dx+dy*dy);
-
-            if(dist<25){
-
-                let damage=20;
-
-                if(bullet.y<enemy.y-10){
-                    damage=100;
-                    showHeadshot();
+                // Destruir bala se sair da tela
+                if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                    entities.bullets.splice(i, 1);
+                    continue;
                 }
 
-                enemy.health-=damage;
+                // Colisão: Bala do jogador nos Bots
+                if (!b.isBot) {
+                    for (let j = entities.bots.length - 1; j >= 0; j--) {
+                        let bot = entities.bots[j];
+                        let dist = Math.hypot(b.x - bot.x, b.y - bot.y);
+                        if (dist < b.radius + bot.radius) {
+                            bot.hp -= b.damage;
+                            spawnParticles(b.x, b.y, bot.color, 6);
+                            entities.bullets.splice(i, 1);
 
-                bullets.splice(index,1);
-
-                if(enemy.health<=0){
-                    enemies.splice(eIndex,1);
-
-                    xp+=50;
-
-                    if(xp>=level*100){
-                        level++;
-                        xp=0;
+                            if (bot.hp <= 0) {
+                                spawnParticles(bot.x, bot.y, bot.color, 15);
+                                score += 10;
+                                cash += bot.reward;
+                                updateUI();
+                                entities.bots.splice(j, 1);
+                            }
+                            break;
+                        }
                     }
+                } 
+                // Colisão: Bala dos Bots no Jogador
+                else {
+                    let dist = Math.hypot(b.x - player.x, b.y - player.y);
+                    if (dist < b.radius + player.radius) {
+                        player.hp -= b.damage;
+                        spawnParticles(b.x, b.y, '#ff0000', 10);
+                        updateUI();
+                        entities.bullets.splice(i, 1);
 
-                    savePlayer();
+                        if (player.hp <= 0) {
+                            gameOver();
+                        }
+                    }
                 }
             }
-        });
-    });
-}
 
-function showHeadshot(){
-    const dmg=document.getElementById('damage');
+            // 4. Processar Bots (Movimento IA e Ataque)
+            const now = Date.now();
+            for (let bot of entities.bots) {
+                let dx = player.x - bot.x;
+                let dy = player.y - bot.y;
+                let dist = Math.hypot(dx, dy);
 
-    dmg.style.display='block';
+                // IA de perseguição direcionada
+                let angleToPlayer = Math.atan2(dy, dx);
+                bot.x += Math.cos(angleToPlayer) * bot.speed;
+                bot.y += Math.sin(angleToPlayer) * bot.speed;
 
-    setTimeout(()=>{
-        dmg.style.display='none';
-    },700);
-}
+                // IA de Disparo do Bot (atira se estiver perto)
+                if (dist < 350 && now - bot.lastShot > bot.shootInterval) {
+                    bot.lastShot = now;
+                    shoot(bot, angleToPlayer, true);
+                }
+            }
 
-function punch(){
+            // 5. Partículas de Efeito
+            for (let i = entities.particles.length - 1; i >= 0; i--) {
+                let p = entities.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) entities.particles.splice(i, 1);
+            }
 
-    enemies.forEach((enemy,eIndex)=>{
-
-        const dx=player.x-enemy.x;
-        const dy=player.y-enemy.y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-
-        if(dist<70){
-            enemy.health-=30;
-
-            if(enemy.health<=0){
-                enemies.splice(eIndex,1);
-                xp+=25;
+            // Gerenciar Spawns de novos inimigos
+            if (now - lastBotSpawn > botSpawnInterval) {
+                spawnBot();
+                lastBotSpawn = now;
+                // Dificuldade progressiva sutil
+                if (botSpawnInterval > 900) botSpawnInterval -= 25;
             }
         }
-    });
-}
 
-function updateHUD(){
-    document.getElementById('hudName').innerText='PLAYER: '+document.getElementById('playerName').value;
-    document.getElementById('hudLevel').innerText='LEVEL: '+level;
-    document.getElementById('hudXP').innerText='XP: '+xp;
-    document.getElementById('hudHealth').innerText='VIDA: '+Math.floor(health);
-}
+        // Renderização Visual Completa (Canvas)
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function drawBackground(){
-    const gradient=ctx.createLinearGradient(0,0,0,height);
+            // Desenhar Grid de fundo para dar noção de movimento (Premium Touch)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
 
-    gradient.addColorStop(0,'#111144');
-    gradient.addColorStop(1,'#000000');
+            // Desenhar Partículas
+            for (let p of entities.particles) {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
 
-    ctx.fillStyle=gradient;
-    ctx.fillRect(0,0,width,height);
-}
+            // Desenhar Balas
+            for (let b of entities.bullets) {
+                ctx.fillStyle = b.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = b.color;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset
+            }
 
-function gameLoop(){
+            // Desenhar Inimigos (Bots)
+            for (let bot of entities.bots) {
+                // Corpo do Bot
+                ctx.fillStyle = bot.color;
+                ctx.beginPath();
+                ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
+                ctx.fill();
 
-    if(!gameStarted)return;
+                // Barra de vida interna minúscula do Bot
+                let barW = bot.radius * 1.5;
+                let barH = 3;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(bot.x - barW/2, bot.y - bot.radius - 8, barW, barH);
+                ctx.fillStyle = '#00ffcc';
+                ctx.fillRect(bot.x - barW/2, bot.y - bot.radius - 8, barW * (bot.hp / bot.maxHp), barH);
+            }
 
-    requestAnimationFrame(gameLoop);
+            // Desenhar Jogador Principal (Animação e Arma)
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
 
-    drawBackground();
-    drawStars();
+            // Brilho de efeito neon do player
+            ctx.shadowBlur = 12 + Math.sin(player.pulseAnim) * 4;
+            ctx.shadowColor = player.color;
 
-    movePlayer();
-    moveEnemies();
+            // Design do Personagem (Visual Core)
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            ctx.fill();
 
-    drawPlayer();
-    drawEnemies();
+            // Renderizar Arma Equipada de acordo com a rotação
+            const currentWpnObj = weapons[player.currentWeapon];
+            ctx.fillStyle = currentWpnObj.color;
+            ctx.fillRect(10, -4, 18, 8); // Cano da arma
 
-    updateBullets();
-    updateHUD();
+            ctx.restore();
+        }
 
-    if(health<=0){
-        alert('VOCÊ MORREU');
-        location.reload();
-    }
-}
+        // Loop Principal do Game Engine
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
 
-window.addEventListener('keydown',e=>{
-    keys[e.key.toLowerCase()]=true;
+        // Atualizar Textos da Interface
+        function updateUI() {
+            document.getElementById('hp-display').innerText = Math.max(0, player.hp);
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('cash-display').innerText = cash;
+        }
 
-    if(e.key===' '){
-        punch();
-    }
+        // Telas e Modais (Game Over & Shop)
+        function gameOver() {
+            gameActive = false;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-title').innerText = "VORTEX STRIKE";
+            document.getElementById('gameover-modal').classList.add('active');
+        }
 
-    if(e.key.toLowerCase()==='f'){
-        flying=!flying;
-    }
-});
+        function restartGame() {
+            player.hp = 100;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            score = 0;
+            cash = 0;
+            botSpawnInterval = 2500;
+            entities.bots = [];
+            entities.bullets = [];
+            entities.particles = [];
+            player.currentWeapon = 'pistol';
+            updateUI();
+            document.getElementById('gameover-modal').classList.remove('active');
+            gameActive = true;
+        }
 
-window.addEventListener('keyup',e=>{
-    keys[e.key.toLowerCase()]=false;
-});
+        function toggleShop(open) {
+            if (open) {
+                gameActive = false;
+                renderShop();
+                document.getElementById('shop-modal').classList.add('active');
+            } else {
+                document.getElementById('shop-modal').classList.remove('active');
+                gameActive = true;
+            }
+        }
 
-window.addEventListener('click',()=>{
-    if(gameStarted){
-        shoot();
-    }
-});
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+            
+            for (let key in weapons) {
+                let w = weapons[key];
+                let item = document.createElement('div');
+                item.className = `shop-item ${w.owned ? 'owned' : ''}`;
+                
+                let btnText = w.owned ? (player.currentWeapon === key ? "EQUIPADO" : "EQUIPAR") : `COMPRAR $${w.price}`;
+                let btnClass = (!w.owned && cash >= w.price) || w.owned ? 'buyable' : '';
 
-window.addEventListener('resize',()=>{
-    width=window.innerWidth;
-    height=window.innerHeight;
+                item.innerHTML = `
+                    <h3 style="color:${w.color}; font-size:15px;">${w.name}</h3>
+                    <p>Dano: ${w.damage} | Vel: ${w.fireRate}ms</p>
+                    <button class="${btnClass}" onclick="handleShopAction('${key}')">${btnText}</button>
+                `;
+                grid.appendChild(item);
+            }
+        }
 
-    canvas.width=width;
-    canvas.height=height;
-});
+        function handleShopAction(key) {
+            let w = weapons[key];
+            if (w.owned) {
+                player.currentWeapon = key;
+            } else if (cash >= w.price) {
+                cash -= w.price;
+                w.owned = true;
+                player.currentWeapon = key;
+                updateUI();
+            }
+            renderShop();
+        }
 
-console.log('VORTEX GALAXY WAR INICIADO');
-console.log('TESTE 1 OK - CANVAS');
-console.log('TESTE 2 OK - IA');
-console.log('TESTE 3 OK - LOCALSTORAGE');
-console.log('TESTE 4 OK - TIROS');
-</script>
-
+        // Início Inicializador
+        updateUI();
+        lastBotSpawn = Date.now();
+        gameLoop();
+    </script>
 </body>
 </html>
