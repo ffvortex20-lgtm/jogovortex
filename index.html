@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vortex Strike: CS2 Edition</title>
+    <title>Bloxd.io BedWars Remake</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,125 +11,184 @@
             -webkit-user-select: none;
             margin: 0;
             padding: 0;
-            touch-action: none; /* Bloqueia travas na WebView do Android */
+            touch-action: none;
         }
         body, html {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #11141a;
-            font-family: Arial, sans-serif;
+            background-color: #5c94fc; /* Cor do céu clássica */
+            font-family: 'Segoe UI', Arial, sans-serif;
         }
         canvas {
             display: block;
             width: 100%;
             height: 100%;
         }
-        /* HUD Superior Estilo CS2 */
-        #hud {
+        /* Top HUD de Recursos */
+        #resource-hud {
             position: absolute;
             top: 10px;
-            left: 0;
-            width: 100%;
+            left: 10px;
             display: flex;
-            justify-content: space-between;
-            padding: 0 15px;
+            gap: 10px;
             pointer-events: none;
         }
-        .hud-card {
-            background: rgba(18, 22, 29, 0.9);
-            border: 2px solid #2e3748;
-            padding: 6px 12px;
+        .res-count {
+            background: rgba(0,0,0,0.6);
             border-radius: 4px;
+            padding: 6px 12px;
             color: #fff;
-            font-size: 13px;
             font-weight: bold;
-            text-align: center;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #444;
         }
-        .hud-card span { color: #de9b35; font-size: 15px; } /* Cor clássica do CS */
         
-        #buy-btn {
+        /* Botões de Ação Lateral */
+        .side-btn {
             position: absolute;
-            top: 65px;
-            left: 15px;
-            background: #de9b35;
-            color: #000;
-            border: none;
-            padding: 6px 14px;
+            right: 15px;
+            background: #4a5f7d;
+            border: 2px solid #fff;
+            color: white;
+            padding: 10px 16px;
             font-weight: bold;
-            font-size: 12px;
-            border-radius: 3px;
+            border-radius: 6px;
+            font-size: 13px;
+            box-shadow: 0 4px 0 #2c3a4e;
         }
+        #shop-trigger { top: 15px; background: #de9b35; }
+        #break-trigger { top: 70px; background: #cc3333; }
 
-        /* Modais */
-        .modal {
+        /* Hotbar Estilo Bloxd.io */
+        #hotbar {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 12, 16, 0.95);
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background: rgba(30, 30, 40, 0.85);
+            padding: 4px;
+            border-radius: 5px;
+            border: 2px solid #555;
+            gap: 4px;
+        }
+        .slot {
+            width: 44px;
+            height: 44px;
+            background: #3a3a4a;
+            border: 2px solid #777;
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
-            z-index: 10;
-            display: none;
+            font-size: 10px;
+            font-weight: bold;
         }
-        .modal.active { display: flex; }
-        .modal h2 { color: #de9b35; margin-bottom: 20px; letter-spacing: 1px; }
+        .slot.active {
+            border-color: #fff;
+            background: #555577;
+        }
+        .slot span { font-size: 9px; color: #aaa; }
 
-        .shop-list {
+        /* UI do Shop inspirado no seu Print */
+        #shop-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 20, 30, 0.95);
+            z-index: 100;
+            display: none;
+            grid-template-columns: 120px 1fr;
+        }
+        #shop-sidebar {
+            background: #1c2331;
+            border-right: 2px solid #2d384e;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 80%;
-            max-width: 320px;
-            margin-bottom: 20px;
+            padding: 10px 0;
         }
-        .shop-item {
+        .tab-btn {
+            background: transparent; border: none; color: #a0aabf;
+            padding: 14px; text-align: left; font-weight: bold; font-size: 14px;
+        }
+        .tab-btn.active { color: #de9b35; background: #253047; border-left: 4px solid #de9b35; }
+        
+        #shop-content {
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .item-card {
+            background: #253047;
+            border: 1px solid #3b4b6e;
+            border-radius: 6px;
+            padding: 10px;
             display: flex;
             justify-content: space-between;
-            background: #1c222e;
-            padding: 12px;
-            border: 1px solid #3b475c;
-            border-radius: 4px;
             align-items: center;
+            color: #fff;
         }
-        .shop-item button {
-            background: #de9b35; color: #000; border: none;
-            padding: 6px 12px; font-weight: bold; border-radius: 2px;
+        .item-card button {
+            background: #de9b35; color: black; border: none;
+            padding: 6px 10px; font-weight: bold; border-radius: 4px; font-size: 12px;
         }
-        .shop-item button:disabled { background: #444; color: #888; }
+        .item-card button:disabled { background: #444; color: #888; }
+
+        /* Alerta de Cama Quebrada */
+        #alert-box {
+            position: absolute;
+            top: 120px; width: 100%;
+            text-align: center;
+            font-size: 20px; font-weight: bold; color: #ff3333;
+            text-shadow: 0 2px 4px #000;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div class="hud-card">HP<br><span id="hp-txt">100</span></div>
-        <div class="hud-card">ARMA<br><span id="weapon-txt">Deagle</span></div>
-        <div class="hud-card">MONEY<br><span id="money-txt">$800</span></div>
-        <div class="hud-card">KILLS<br><span id="kills-txt">0</span></div>
+    <div id="resource-hud">
+        <div class="res-count">⬜ FERRO: <span id="hud-iron">0</span></div>
+        <div class="res-count" style="color:#ffd700">🟨 OURO: <span id="hud-gold">0</span></div>
     </div>
 
-    <button id="buy-btn" onclick="openShop()">[B] COMPRAR</button>
+    <button id="shop-trigger" class="side-btn" onclick="toggleShop(true)">LOJA [B]</button>
+    <button id="break-trigger" class="side-btn" onclick="triggerAttack()">ATACAR / QUEBRAR</button>
 
-    <canvas id="csCanvas"></canvas>
+    <div id="alert-box"></div>
 
-    <!-- Menu de Compras -->
-    <div id="shop-modal" class="modal">
-        <h2>MENU DE COMPRAS</h2>
-        <div class="shop-list" id="shop-list"></div>
-        <button onclick="closeShop()" style="background:#333; border:none; color:#fff; padding:10px 20px; border-radius:3px; font-weight:bold;">FECHAR</button>
+    <div id="hotbar">
+        <div class="slot active" onclick="setSlot(0)">⚔️<br><span>Espada</span></div>
+        <div class="slot" onclick="setSlot(1)">⛏️<br><span>Picareta</span></div>
+        <div class="slot" onclick="setSlot(2)" id="slot-blocks">📦0<br><span>Blocos</span></div>
     </div>
 
-    <!-- Tela de Fim de Jogo -->
-    <div id="gameover-modal" class="modal">
-        <h2 id="go-title">FIM DA RODADA</h2>
-        <p style="color:#aaa; margin-bottom:20px;">Você eliminou <span id="final-kills" style="color:#de9b35">0</span> alvos.</p>
-        <button onclick="restartRound()" style="background:#de9b35; color:#000; border:none; padding:12px 30px; font-weight:bold; border-radius:3px;">PRÓXIMO ROUND</button>
+    <canvas id="bwCanvas"></canvas>
+
+    <div id="shop-modal">
+        <div id="shop-sidebar">
+            <button class="tab-btn active" onclick="switchTab('blocks')">Blocks</button>
+            <button class="tab-btn" onclick="switchTab('combat')">Combat</button>
+            <button class="tab-btn" onclick="switchTab('utility')">Utility</button>
+            <button class="tab-btn" style="margin-top:auto; background:#cc3333; color:white;" onclick="toggleShop(false)">Sair</button>
+        </div>
+        <div id="shop-content">
+            <h2 style="color:white; margin-bottom:15px;" id="shop-title">Blocks Shop</h2>
+            <div class="shop-grid" id="shop-items-container"></div>
+        </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('csCanvas');
+        const canvas = document.getElementById('bwCanvas');
         const ctx = canvas.getContext('2d');
 
         function resize() {
@@ -139,492 +198,380 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Configurações do Jogo
-        let gameRunning = true;
-        let kills = 0;
-        let money = 800;
-        let lastBotSpawn = 0;
+        // Dados de Economia do Jogador
+        let inventory = { iron: 0, gold: 0, blocks: 0 };
+        let activeSlot = 0; // 0=Espada, 1=Picareta, 2=Blocos
+        let currentTab = 'blocks';
 
-        // Arsenal Estilo CS2 (Dano, Recoil/Spray, Cadência, Preço)
-        const arsenal = {
-            deagle: { name: "Desert Eagle", damage: 55, sprayMax: 2, fireRate: 500, price: 0, color: "#a0a5b0", barrelLen: 22 },
-            ak47: { name: "AK-47", damage: 36, sprayMax: 12, fireRate: 110, price: 2700, color: "#85582a", barrelLen: 26 },
-            awp: { name: "AWP Magnun", damage: 110, sprayMax: 25, fireRate: 1300, price: 4750, color: "#3a4f3b", barrelLen: 32 }
+        // Configuração de Itens da Loja
+        const shopData = {
+            blocks: [
+                { id: 'wool', name: 'Lã x16', costType: 'iron', cost: 8, amount: 16 },
+                { id: 'wood', name: 'Madeira x16', costType: 'iron', cost: 16, amount: 16 }
+            ],
+            combat: [
+                { id: 'stone_sword', name: 'Espada Pedra', costType: 'iron', cost: 24, weapon: true, dmg: 25 },
+                { id: 'iron_armor', name: 'Armadura Ferro', costType: 'gold', cost: 12, armor: true }
+            ],
+            utility: [
+                { id: 'stone_pick', name: 'Picareta Pedra', costType: 'iron', cost: 24, tool: true },
+                { id: 'apple', name: 'Maçã (Cura)', costType: 'iron', cost: 6, heal: true }
+            ]
         };
 
-        // Jogador (CT)
+        // Estado das Camas do jogo
+        let blueBedAlive = true;
+        let redBedAlive = true;
+
+        // FÍSICA E ENTIDADES
         const player = {
-            x: 100,
-            y: 100,
-            radius: 15,
-            speed: 2.8,
-            angle: 0,
-            hp: 100,
-            currentWeapon: 'deagle',
-            lastShot: 0,
-            sprayCount: 0,  // Mecânica de controle do spray do CS2
-            lastShotTime: 0
+            x: 100, y: 150, radius: 12, speed: 3, angle: 0,
+            hp: 100, maxHp: 100, team: 'blue', dmg: 15
         };
 
-        // Entidades
-        const bots = [];
-        const bullets = [];
-        const particles = [];
+        const bot = {
+            x: 500, y: 150, radius: 12, speed: 1.8, angle: 0,
+            hp: 100, team: 'red', state: 'defend', lastAttack: 0
+        };
 
-        // Obstáculos / Paredes Táticas do Mapa
-        const walls = [
-            { x: 0, y: 0, w: 30, h: 2000 }, // Borda Esquerda
-            { x: 0, y: 0, w: 2000, h: 30 }, // Borda Superior
-            { x: 350, y: 0, w: 50, h: 250 }, // Caixa Grande Meio
-            { x: 150, y: 350, w: 200, h: 60 }, // Parede B1
-            { x: 500, y: 300, w: 80, h: 80 }   // Caixa Bomb B
-        ];
+        // Estrutura do Mapa em Blocos/Ilhas (Grid de tamanho 32x32 para simular blocos)
+        const blockSize = 32;
+        let mapBlocks = [];
 
-        // Ajustar dinamicamente as paredes externas com base no tamanho da tela
-        function updateOuterWalls() {
-            walls[0].h = canvas.height;
-            walls[1].w = canvas.width;
+        // Criando Ilhas Iniciais (Base Azul e Base Vermelha)
+        function initMap() {
+            // Ilha Azul (Esquerda)
+            for(let i=1; i<6; i++) {
+                for(let j=3; j<8; j++) {
+                    mapBlocks.push({x: i*blockSize, y: j*blockSize, type: 'island'});
+                }
+            }
+            // Ilha Vermelha (Direita)
+            for(let i=14; i<19; i++) {
+                for(let j=3; j<8; j++) {
+                    mapBlocks.push({x: i*blockSize, y: j*blockSize, type: 'island'});
+                }
+            }
         }
-        updateOuterWalls();
-        window.addEventListener('resize', updateOuterWalls);
+        initMap();
 
-        // Joysticks Virtuais Integrados Direto no Canvas (Fix de toque absoluto do Sketchware)
-        const joyMove = { x: 80, y: 0, rOut: 45, rIn: 20, tId: null, cx: 80, cy: 0, active: false, dx: 0, dy: 0 };
-        const joyAim = { x: 0, y: 0, rOut: 45, rIn: 20, tId: null, cx: 0, cy: 0, active: false, dx: 0, dy: 0 };
+        // Camas e Geradores
+        const blueBed = { x: 48, y: 160, w: 40, h: 25 };
+        const redBed = { x: 560, y: 160, w: 40, h: 25 };
+        const ironGenerator = { x: 96, y: 220, type: 'iron', lastSpawn: 0 };
+        const redGenerator = { x: 512, y: 220, type: 'iron', lastSpawn: 0 };
 
-        function initJoysticks() {
-            joyMove.y = canvas.height - 85;
-            joyAim.x = canvas.width - 80;
-            joyAim.y = canvas.height - 85;
+        // Joysticks nativos anti-bug do Sketchware
+        const joyMove = { x: 75, y: 0, rOut: 45, rIn: 18, tId: null, cx: 75, cy: 0, active: false, dx: 0, dy: 0 };
+        function initJoystick() {
+            joyMove.y = canvas.height - 80;
             joyMove.cx = joyMove.x; joyMove.cy = joyMove.y;
-            joyAim.cx = joyAim.x; joyAim.cy = joyAim.y;
         }
-        initJoysticks();
-        window.addEventListener('resize', initJoysticks);
+        initJoystick();
+        window.addEventListener('resize', initJoystick);
 
-        // Processador Touch robusto contra travas
+        // Sistema Multitouch Seguro
         window.addEventListener('touchstart', (e) => {
             for(let t of e.changedTouches) {
                 if(t.clientX < canvas.width / 2 && joyMove.tId === null) {
                     joyMove.tId = t.identifier;
                     joyMove.active = true;
-                    updateJoy(joyMove, t.clientX, t.clientY);
-                }
-                if(t.clientX >= canvas.width / 2 && joyAim.tId === null) {
-                    joyAim.tId = t.identifier;
-                    joyAim.active = true;
-                    updateJoy(joyAim, t.clientX, t.clientY);
+                    updateJoy(t.clientX, t.clientY);
+                } else if(t.clientX >= canvas.width / 2) {
+                    // Clicou no lado direito da tela: Ação Baseada no Slot
+                    handleRightClickAction(t.clientX, t.clientY);
                 }
             }
-        }, { passive: false });
+        });
 
         window.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             for(let t of e.touches) {
-                if(t.identifier === joyMove.tId) updateJoy(joyMove, t.clientX, t.clientY);
-                if(t.identifier === joyAim.tId) updateJoy(joyAim, t.clientX, t.clientY);
+                if(t.identifier === joyMove.tId) updateJoy(t.clientX, t.clientY);
             }
-        }, { passive: false });
+        });
 
-        const endTouch = (e) => {
+        window.addEventListener('touchend', (e) => {
             for(let t of e.changedTouches) {
                 if(t.identifier === joyMove.tId) {
                     joyMove.tId = null; joyMove.active = false;
                     joyMove.cx = joyMove.x; joyMove.cy = joyMove.y;
                     joyMove.dx = 0; joyMove.dy = 0;
                 }
-                if(t.identifier === joyAim.tId) {
-                    joyAim.tId = null; joyAim.active = false;
-                    joyAim.cx = joyAim.x; joyAim.cy = joyAim.y;
-                    joyAim.dx = 0; joyAim.dy = 0;
+            }
+        });
+
+        function updateJoy(tx, ty) {
+            let dx = tx - joyMove.x;
+            let dy = ty - joyMove.y;
+            let dist = Math.hypot(dx, dy);
+            if(dist > joyMove.rOut) {
+                dx = (dx / dist) * joyMove.rOut;
+                dy = (dy / dist) * joyMove.rOut;
+            }
+            joyMove.cx = joyMove.x + dx;
+            joyMove.cy = joyMove.y + dy;
+            joyMove.dx = dx / joyMove.rOut;
+            joyMove.dy = dy / joyMove.rOut;
+        }
+
+        // Lógica de Construção de pontes/blocos estilo Bloxd
+        function handleRightClickAction(screenX, screenY) {
+            if(activeSlot === 2 && inventory.blocks > 0) {
+                // Converte clique da tela para posição do grid do mapa
+                let gridX = Math.floor(screenX / blockSize) * blockSize;
+                let gridY = Math.floor(screenY / blockSize) * blockSize;
+
+                // Checa se já existe bloco ali
+                let exist = mapBlocks.some(b => b.x === gridX && b.y === gridY);
+                if(!exist) {
+                    mapBlocks.push({ x: gridX, y: gridY, type: 'bridge' });
+                    inventory.blocks--;
+                    updateHUD();
                 }
             }
-        };
-        window.addEventListener('touchend', endTouch);
-        window.addEventListener('touchcancel', endTouch);
-
-        function updateJoy(j, tx, ty) {
-            let distanceX = tx - j.x;
-            let distanceY = ty - j.y;
-            let currentDist = Math.hypot(distanceX, distanceY);
-
-            if(currentDist > j.rOut) {
-                distanceX = (distanceX / currentDist) * j.rOut;
-                distanceY = (distanceY / currentDist) * j.rOut;
-                currentDist = j.rOut;
-            }
-            j.cx = j.x + distanceX;
-            j.cy = j.y + distanceY;
-            j.dx = distanceX / j.rOut;
-            j.dy = distanceY / j.rOut;
         }
 
-        // Sistema de Sangue (Partículas)
-        function spawnBlood(x, y, amount = 8) {
-            for(let i=0; i<amount; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 4,
-                    vy: (Math.random() - 0.5) * 4,
-                    r: Math.random() * 2.5 + 1,
-                    color: '#990000',
-                    alpha: 1,
-                    decay: Math.random() * 0.05 + 0.02
-                });
-            }
+        // Checar se o personagem está pisando em solo firme ou caindo no void
+        function isPlayerOnPlatform(px, py) {
+            return mapBlocks.some(b => 
+                px >= b.x && px <= b.x + blockSize &&
+                py >= b.y && py <= b.y + blockSize
+            );
         }
 
-        // Lógica de Detecção Mecânica de Colisão com Paredes/Obstáculos
-        function checkWallCollision(entity, nextX, nextY) {
-            for(let w of walls) {
-                if (nextX + entity.radius > w.x && nextX - entity.radius < w.x + w.w &&
-                    nextY + entity.radius > w.y && nextY - entity.radius < w.y + w.h) {
-                    return true; // Colidiu, impede o passo de movimento
+        // Atacar ou Quebrar Cama por proximidade
+        function triggerAttack() {
+            // Atacar o Bot Red
+            let distToBot = Math.hypot(player.x - bot.x, player.y - bot.y);
+            if(distToBot < 40) {
+                bot.hp -= player.dmg;
+                if(bot.hp <= 0) {
+                    if(redBedAlive) {
+                        bot.x = 500; bot.y = 150; bot.hp = 100; // Renasce se a cama existir
+                        showAlert("BOT MORREU E RENASCEU!");
+                    } else {
+                        bot.x = -9999; // Eliminado definitivo do round
+                        showAlert("RED TIME ELIMINADO!");
+                    }
                 }
             }
-            return false;
-        }
 
-        // Disparar com Mecânica de Spray / Coice do CS2
-        function shootBullet(shooter, isBot = false) {
-            const now = Date.now();
-            const wpn = arsenal[player.currentWeapon];
-            
-            if (!isBot && now - player.lastShot < wpn.fireRate) return;
-            if (!isBot) player.lastShot = now;
-
-            // Gerenciar Spray (Aumenta o erro de precisão conforme atira seguido)
-            let sprayError = 0;
-            if(!isBot) {
-                if(now - player.lastShotTime < wpn.fireRate + 150) {
-                    player.sprayCount = Math.min(wpn.sprayMax, player.sprayCount + 1);
-                } else {
-                    player.sprayCount = 0; // Descansou o spray
+            // Tentar quebrar a cama vermelha
+            if(redBedAlive) {
+                let distToBed = Math.hypot(player.x - (redBed.x + 20), player.y - (redBed.y + 12));
+                if(distToBed < 50) {
+                    redBedAlive = false;
+                    showAlert("A CAMA VERMELHA FOI DESTRUÍDA!");
                 }
-                player.lastShotTime = now;
-                sprayError = (Math.random() - 0.5) * (player.sprayCount * 0.035);
             }
-
-            const finalAngle = shooter.angle + sprayError;
-
-            bullets.push({
-                x: shooter.x + Math.cos(shooter.angle) * wpn.barrelLen,
-                y: shooter.y + Math.sin(shooter.angle) * wpn.barrelLen,
-                vx: Math.cos(finalAngle) * 14,
-                vy: Math.sin(finalAngle) * 14,
-                damage: isBot ? 15 : wpn.damage,
-                isBot: isBot
-            });
-
-            // Pequena fagulha do disparo
-            spawnBlood(shooter.x + Math.cos(shooter.angle)*wpn.barrelLen, shooter.y + Math.sin(shooter.angle)*wpn.barrelLen, 3);
         }
 
-        // Inteligência Artificial dos Inimigos (Terroristas)
-        function spawnBot() {
-            if(bots.length >= 5 || !gameRunning) return;
-            
-            // Nasce do lado direito da tela (Base T)
-            let bx = canvas.width - 60 - (Math.random() * 100);
-            let by = 100 + (Math.random() * (canvas.height - 200));
-
-            bots.push({
-                x: bx, y: by,
-                radius: 15,
-                speed: 1.5,
-                angle: 0,
-                hp: 100,
-                lastShot: 0,
-                fireRate: 800 + Math.random() * 600
-            });
+        // Sistema de Alertas na tela
+        function showAlert(msg) {
+            const el = document.getElementById('alert-box');
+            el.innerText = msg;
+            setTimeout(() => el.innerText = "", 3000);
         }
 
-        // Atualização e Lógica Geral
+        // ENGINE LOOP (Física e IA)
         function update() {
-            if(!gameRunning) return;
+            let now = Date.now();
 
-            const now = Date.now();
-
-            // 1. Movimento do Jogador com bloqueio físico de parede
+            // 1. Movimentação do Jogador
             if(joyMove.active) {
-                let nextX = player.x + joyMove.dx * player.speed;
-                let nextY = player.y + joyMove.dy * player.speed;
-
-                if(!checkWallCollision(player, nextX, player.y)) player.x = nextX;
-                if(!checkWallCollision(player, player.x, nextY)) player.y = nextY;
-
-                if(!joyAim.active) player.angle = Math.atan2(joyMove.dy, joyMove.dx);
-            } else {
-                // Recuperação natural de spray parado
-                if(now - player.lastShotTime > 300) player.sprayCount = Math.max(0, player.sprayCount - 0.5);
+                player.x += joyMove.dx * player.speed;
+                player.y += joyMove.dy * player.speed;
+                player.angle = Math.atan2(joyMove.dy, joyMove.dx);
             }
 
-            // Limite de bordas da janela padrão
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-
-            // 2. Mirar e Abrir Fogo (Segurar o Dedo faz Spray)
-            if(joyAim.active) {
-                player.angle = Math.atan2(joyAim.dy, joyAim.dx);
-                shootBullet(player, false);
-            }
-
-            // 3. Processar Balas e Colisões
-            for(let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.x += b.vx; b.y += b.vy;
-
-                // Sumir se sair da tela ou bater na parede
-                if(b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height || checkWallCollision({radius: 2}, b.x, b.y)) {
-                    bullets.splice(i, 1);
-                    continue;
-                }
-
-                if(!b.isBot) {
-                    // Bala do jogador nos Terroristas (Bots)
-                    for(let j = bots.length - 1; j >= 0; j--) {
-                        let bot = bots[j];
-                        if(Math.hypot(b.x - bot.x, b.y - bot.y) < bot.radius + 3) {
-                            bot.hp -= b.damage;
-                            spawnBlood(b.x, b.y, 6);
-                            bullets.splice(i, 1);
-
-                            if(bot.hp <= 0) {
-                                spawnBlood(bot.x, bot.y, 16);
-                                bots.splice(j, 1);
-                                kills++;
-                                money += 300; // Recompensa de eliminação padrão do CS
-                                updateHUD();
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    // Bala do Bot no Jogador (CT)
-                    if(Math.hypot(b.x - player.x, b.y - player.y) < player.radius + 3) {
-                        player.hp -= b.damage;
-                        spawnBlood(b.x, b.y, 8);
-                        bullets.splice(i, 1);
-                        updateHUD();
-
-                        if(player.hp <= 0) {
-                            gameRunning = false;
-                            document.getElementById('go-title').innerText = "TERRORISTAS VENCERAM";
-                            document.getElementById('final-kills').innerText = kills;
-                            document.getElementById('gameover-modal').classList.add('active');
-                        }
+            // Detecção de queda no Void (Mecânica clássica de BedWars)
+            if(!isPlayerOnPlatform(player.x, player.y)) {
+                player.hp -= 2; // Sofre dano contínuo no vácuo
+                if(player.hp <= 0) {
+                    if(blueBedAlive) {
+                        player.x = 100; player.y = 150; player.hp = 100;
+                        showAlert("VOCÊ CAIU NO VOID E RESPAWNOU!");
+                    } else {
+                        showAlert("GAME OVER! SUA CAMA JÁ TINHA SIDO QUEBRADA!");
+                        player.x = -1000;
                     }
                 }
             }
 
-            // 4. Lógica de Inteligência Artificial dos Terroristas (Bots)
-            for(let bot of bots) {
+            // 2. Geradores acumulando minérios no chão por aproximação
+            if(now - ironGenerator.lastSpawn > 1200) {
+                if(Math.hypot(player.x - ironGenerator.x, player.y - ironGenerator.y) < 30) {
+                    inventory.iron += 2;
+                    updateHUD();
+                }
+                // O bot também pega ferro se passar perto
+                if(Math.hypot(bot.x - redGenerator.x, bot.y - redGenerator.y) < 30) {
+                    // Lógica interna do bot
+                }
+                ironGenerator.lastSpawn = now;
+            }
+
+            // 3. Inteligência Artificial do Bot Inimigo
+            if(bot.x > 0) {
                 let distToPlayer = Math.hypot(player.x - bot.x, player.y - bot.y);
-                bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x);
+                
+                // Se o player construir ponte e chegar perto, o bot entra em modo de ataque furioso
+                if(distToPlayer < 180) {
+                    bot.angle = Math.atan2(player.y - bot.y, player.x - bot.x);
+                    bot.x += Math.cos(bot.angle) * bot.speed;
+                    bot.y += Math.sin(bot.angle) * bot.speed;
 
-                // Se o bot perder o jogador de vista a longa distância, ele tenta se aproximar vagarosamente
-                if(distToPlayer > 260) {
-                    let nX = bot.x + Math.cos(bot.angle) * bot.speed;
-                    let nY = bot.y + Math.sin(bot.angle) * bot.speed;
-                    if(!checkWallCollision(bot, nX, bot.y)) bot.x = nX;
-                    if(!checkWallCollision(bot, bot.x, nY)) bot.y = nY;
-                } else {
-                    // Se estiver no campo de visão tática, firma a mira e dispara
-                    if(now - bot.lastShot > bot.fireRate) {
-                        shootBullet(bot, true);
-                        bot.lastShot = now;
+                    if(distToPlayer < 30 && now - bot.lastAttack > 1000) {
+                        player.hp -= 15;
+                        showAlert("O BOT TE ATALHOU!");
+                        bot.lastAttack = now;
                     }
                 }
-            }
-
-            // 5. Partículas de Efeito
-            for(let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
-                if(p.alpha <= 0) particles.splice(i, 1);
-            }
-
-            // Spawns Contínuos de Bots para manter a ação
-            if(now - lastBotSpawn > 3500) {
-                spawnBot();
-                lastBotSpawn = now;
             }
         }
 
-        // Renderização Visual Geral
+        // PARTE GRÁFICA (Visual Render 2D Top-Down Simulado)
         function draw() {
-            // Fundo Cor do Mapa (Estilo Dust 2 de cima)
-            ctx.fillStyle = '#262d3a';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar o Vazio (Void de Fundo Espacial)
+            ctx.fillStyle = "#4a83ec";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Desenhar Paredes / Caixas Obstáculos
-            ctx.fillStyle = '#414d61';
-            ctx.strokeStyle = '#52627a';
-            ctx.lineWidth = 2;
-            for(let w of walls) {
-                ctx.fillRect(w.x, w.y, w.w, w.h);
-                ctx.strokeRect(w.x, w.y, w.w, w.h);
+            // Desenhar Blocos das Ilhas/Pontes
+            for(let b of mapBlocks) {
+                ctx.fillStyle = b.type === 'island' ? '#8bc34a' : '#e0e0e0'; // Verde para ilha, cinza para ponte
+                ctx.fillRect(b.x, b.y, blockSize, blockSize);
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.strokeRect(b.x, b.y, blockSize, blockSize);
             }
 
-            // Desenhar Partículas (Sangue)
-            for(let p of particles) {
-                ctx.save();
-                ctx.globalAlpha = p.alpha;
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-                ctx.restore();
+            // Desenhar Geradores de Recurso
+            ctx.fillStyle = "#757575";
+            ctx.beginPath(); ctx.arc(ironGenerator.x, ironGenerator.y, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#757575";
+            ctx.beginPath(); ctx.arc(redGenerator.x, redGenerator.y, 8, 0, Math.PI*2); ctx.fill();
+
+            // Desenhar Cama Azul
+            if(blueBedAlive) {
+                ctx.fillStyle = "#2196f3"; ctx.fillRect(blueBed.x, blueBed.y, blueBed.w, blueBed.h);
+                ctx.fillStyle = "#fff"; ctx.fillRect(blueBed.x, blueBed.y, 12, blueBed.h); // Almofada
             }
 
-            // Desenhar Projéteis de Bala
-            ctx.fillStyle = '#ffff55';
-            for(let b of bullets) {
-                ctx.fillRect(b.x, b.y, 3, 3);
+            // Desenhar Cama Vermelha
+            if(redBedAlive) {
+                ctx.fillStyle = "#f44336"; ctx.fillRect(redBed.x, redBed.y, redBed.w, redBed.h);
+                ctx.fillStyle = "#fff"; ctx.fillRect(redBed.x + 28, redBed.y, 12, redBed.h); // Almofada
             }
 
-            // Desenhar Terroristas (Inimigos de Roupa Vermelha/Marrom)
-            for(let bot of bots) {
-                ctx.save();
-                ctx.translate(bot.x, bot.y);
-                ctx.rotate(bot.angle);
-                
-                // Mãos/Arma do Bot
-                ctx.fillStyle = '#555';
-                ctx.fillRect(8, -3, 12, 6);
-
-                // Corpo do Bot
-                ctx.fillStyle = '#cc3333';
-                ctx.beginPath(); ctx.arc(0, 0, bot.radius, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
-                
-                // Faixa na cabeça dos Terroristas
-                ctx.fillStyle = '#e69138';
-                ctx.fillRect(-4, -5, 5, 10);
-                ctx.restore();
+            // Desenhar Bot Inimigo (Red)
+            if(bot.x > 0) {
+                ctx.fillStyle = "#ff3333";
+                ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#000"; ctx.stroke();
             }
 
-            // Desenhar Jogador Principal (Contra-Terrorista - Azul de Elite)
-            if(gameRunning) {
+            // Desenhar Personagem Jogador (Blue)
+            if(player.x > 0) {
                 ctx.save();
                 ctx.translate(player.x, player.y);
                 ctx.rotate(player.angle);
-
-                // Linha de Spray Dinâmica (Feedback visual para você saber quando o tiro vai espalhar)
-                if(player.sprayCount > 1) {
-                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.25)';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(30, -player.sprayCount * 1.5);
-                    ctx.lineTo(120, -player.sprayCount * 5);
-                    ctx.moveTo(30, player.sprayCount * 1.5);
-                    ctx.lineTo(120, player.sprayCount * 5);
-                    ctx.stroke();
-                }
-
-                // Desenhar Arma Equipada Dinâmica
-                const activeWeapon = arsenal[player.currentWeapon];
-                ctx.fillStyle = activeWeapon.color;
-                ctx.fillRect(10, -3, activeWeapon.barrelLen, 6);
-
-                // Corpo do CT
-                ctx.fillStyle = '#3366cc';
+                ctx.fillStyle = "#3355ff";
                 ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+                
+                // Mostrar item na mão baseado na Hotbar
+                ctx.fillStyle = activeSlot === 0 ? '#777' : (activeSlot === 1 ? '#555' : '#e0e0e0');
+                ctx.fillRect(8, -3, 10, 5);
+                ctx.restore();
 
-                // Capacete Militar do CT
-                ctx.fillStyle = '#1c3d7d';
-                ctx.beginPath(); ctx.arc(2, 0, 9, 0, Math.PI*2); ctx.fill();
+                // Barra de HP flutuante em cima do player
+                ctx.fillStyle = 'red'; ctx.fillRect(player.x - 15, player.y - 22, 30, 4);
+                ctx.fillStyle = 'green'; ctx.fillRect(player.x - 15, player.y - 22, 30 * (player.hp/player.maxHp), 4);
+            }
+
+            // Renderizar Analógico Virtual na tela
+            if(joyMove.active) {
+                ctx.save(); ctx.globalAlpha = 0.4;
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(joyMove.x, joyMove.y, joyMove.rOut, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = "#fff";
+                ctx.beginPath(); ctx.arc(joyMove.cx, joyMove.cy, joyMove.rIn, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
             }
-
-            // Joysticks Virtuais Táticos
-            drawJoystick(joyMove, '#de9b35');
-            drawJoystick(joyAim, '#ffffff');
         }
 
-        function drawJoystick(j, color) {
-            if(!j.active && j.x === 0) return;
-            ctx.save();
-            ctx.globalAlpha = j.active ? 0.35 : 0.12;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.arc(j.x, j.y, j.rOut, 0, Math.PI*2); ctx.stroke();
-            ctx.fillStyle = color;
-            ctx.beginPath(); ctx.arc(j.cx, j.cy, j.rIn, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
-        }
-
-        function updateHUD() {
-            document.getElementById('hp-txt').innerText = Math.max(0, player.hp);
-            document.getElementById('money-txt').innerText = `$${money}`;
-            document.getElementById('kills-txt').innerText = kills;
-            document.getElementById('weapon-txt').innerText = arsenal[player.currentWeapon].name;
-        }
-
-        // Funções da Loja [B]
-        function openShop() {
-            gameRunning = false;
-            const container = document.getElementById('shop-list');
-            container.innerHTML = '';
-
-            for(let key in arsenal) {
-                let item = arsenal[key];
-                let box = document.createElement('div');
-                box.className = 'shop-item';
-                
-                let isEquipped = player.currentWeapon === key;
-                let canBuy = money >= item.price || item.price === 0;
-
-                box.innerHTML = `
-                    <div>
-                        <strong style="font-size:14px; color:#fff">${item.name}</strong><br>
-                        <span style="color:#aaa; font-size:11px;">$${item.price} | Dano: ${item.damage}</span>
-                    </div>
-                    <button ${(!canBuy && !isEquipped) ? 'disabled' : ''} onclick="buyWeapon('${key}')">
-                        ${isEquipped ? 'EQUIPADA' : (item.price === 0 ? 'EQUIPAR' : 'COMPRAR')}
-                    </button>
-                `;
-                container.appendChild(box);
-            }
-            document.getElementById('shop-modal').classList.add('active');
-        }
-
-        function buyWeapon(key) {
-            let item = arsenal[key];
-            if(player.currentWeapon !== key) {
-                if(money >= item.price) {
-                    if(item.price > 0) money -= item.price;
-                    player.currentWeapon = key;
-                }
-            }
-            closeShop();
-        }
-
-        function closeShop() {
-            document.getElementById('shop-modal').classList.remove('active');
-            updateHUD();
-            gameRunning = true;
-        }
-
-        function restartRound() {
-            player.hp = 100;
-            player.x = 100;
-            player.y = 100;
-            bots.length = 0;
-            bullets.length = 0;
-            particles.length = 0;
-            updateHUD();
-            document.getElementById('gameover-modal').classList.remove('active');
-            gameRunning = true;
-        }
-
-        // Game Loop Principal
         function loop() {
             update();
             draw();
             requestAnimationFrame(loop);
         }
 
-        // Inicializador de partida
+        // GERENCIADOR DE INTERFACE DO USUÁRIO (UI)
+        function updateHUD() {
+            document.getElementById('hud-iron').innerText = inventory.iron;
+            document.getElementById('hud-gold').innerText = inventory.gold;
+            document.getElementById('slot-blocks').innerHTML = `📦${inventory.blocks}<br><span>Blocos</span>`;
+        }
+
+        function setSlot(id) {
+            activeSlot = id;
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach((s, idx) => s.className = idx === id ? 'slot active' : 'slot');
+        }
+
+        function toggleShop(open) {
+            document.getElementById('shop-modal').style.display = open ? 'grid' : 'none';
+            if(open) renderShopList();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('shop-title').innerText = `${tab.toUpperCase()} SHOP`;
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.className = b.innerText.toLowerCase() === tab ? 'tab-btn active' : 'tab-btn');
+            renderShopList();
+        }
+
+        function renderShopList() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
+            
+            shopData[currentTab].forEach(item => {
+                let card = document.createElement('div');
+                card.className = 'item-card';
+                let currentCurrency = inventory[item.costType];
+                let disabled = currentCurrency < item.cost ? 'disabled' : '';
+
+                card.innerHTML = `
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <span style="font-size:11px; color:#aaa;">Custo: ${item.cost} ${item.costType}</span>
+                    </div>
+                    <button ${disabled} onclick="buyItem('${item.id}', ${item.cost}, '${item.costType}', ${item.amount || 0})">Comprar</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buyItem(id, cost, type, amt) {
+            if(inventory[type] >= cost) {
+                inventory[type] -= cost;
+                if(id === 'wool' || id === 'wood') {
+                    inventory.blocks += amt;
+                    setSlot(2); // Seleciona automaticamente o bloco comprado
+                } else if(id === 'stone_sword') {
+                    player.dmg = 25;
+                    showAlert("ESPA DE PEDRA ADQUIRIDA!");
+                } else if(id === 'apple') {
+                    player.hp = Math.min(player.maxHp, player.hp + 30);
+                }
+                updateHUD();
+                renderShopList();
+            }
+        }
+
+        // Inicializador oficial
         updateHUD();
         loop();
     </script>
